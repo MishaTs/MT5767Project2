@@ -29,18 +29,19 @@ interimDat <- wildebeest %>% mutate(qhat = (1 - sqrt(1 - 4*(sehat^2)/(Nhat)))/2,
 validObs <- which(!is.na(wildebeest$Nhat), arr.ind=TRUE)
 numYears <- nrow(wildebeest)
 
+# Error in node N[19]: Invalid parent values
+# imputing data solves partially
 wildebeestImpute <- na.locf(interimDat)
 
 sink("wildebeestSSM1.txt")
 cat("
 model{
   #PRIORS
-  n0 ~ dunif(0,0.5) #no more than 500k individuals observed before 1970, so likely sensible?
+  n0 ~ dunif(0,0.6) #no more than 500k individuals observed before 1970
   N[1] <- n0
   beta0 ~ dnorm(0,0.01)
   beta1 ~ dnorm(0,0.01) 
   #beta2 ~ dnorm(0,0.01) 
-  #p ~ dunif(0,1)
   
   # Likelihood - State process
   for (t in 2:nYrs) {
@@ -50,10 +51,9 @@ model{
   }
   
   # Likelihood - Observation process
-  for(tFilt in validYrs) { 
+  for(tFilt in validYrs) {
+    #Index out of range taking subset of  y
     y[tFilt] ~ dnorm(N[tFilt], obsTau[tFilt])
-    #binomial fit fails
-    #y[tFilt] ~ dbin(p, N[tFilt])
   }
   
   #DERIVED 
