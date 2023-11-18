@@ -21,8 +21,8 @@ data("wildebeest")
 
 #binomial variance is n*p*(1-p)
 #if initial CI assumptions are correctly formulated, then these should be p and q
-interimDat <- wildebeest %>% mutate(qhat = (1 - sqrt(1 - 4*(sehat^2)/(Nhat)))/2,
-                                    phat = (1 + sqrt(1 - 4*(sehat^2)/(Nhat)))/2)
+#interimDat <- wildebeest %>% mutate(qhat = (1 - sqrt(1 - 4*(sehat^2)/(Nhat)))/2,
+#                                    phat = (1 + sqrt(1 - 4*(sehat^2)/(Nhat)))/2)
 
 #get row numbers for all non-na values
 #manually expressed as c(2, 4, 6, 8, 12, 13, 18, 19, 23, 25, 27, 30)
@@ -31,7 +31,8 @@ numYears <- nrow(wildebeest)
 
 # Error in node N[19]: Invalid parent values
 # imputing data solves partially
-wildebeestImpute <- na.locf(interimDat)
+wildebeestImpute <- na.locf(wildebeest, na.rm = FALSE)
+wildebeestImpute[1,2:6] <- wildebeestImpute[2,2:6]
 
 sink("wildebeestSSM1.txt")
 cat("
@@ -41,12 +42,11 @@ model{
   N[1] <- n0
   beta0 ~ dnorm(0,0.01)
   beta1 ~ dnorm(0,0.01) 
-  #beta2 ~ dnorm(0,0.01) 
   
   # Likelihood - State process
-  for (t in 2:(nYrs-1)) { #why are we leaving out the last year?
+  for (t in 2:nYrs) { #why are we leaving out the last year?
     #x is rain; add a lagged term maybe?
-    log(lambda[t]) <- beta0 + beta1 * X[t] #+ beta2 * X[t-1]
+    log(lambda[t]) <- beta0 + beta1 * X[t]
     N[t] ~ dpois(lambda[t]*(N[t-1] - c[t-1])) #subtract removals last
   }
   
@@ -70,7 +70,7 @@ wildebeestData <- list(nYrs = numYears,
                       X = wildebeestImpute$rain)
 
 wildebeestInits <- function() {
-  list(#p = runif(1,0,1), #probability starting value
+  list(N = wildebeestImpute$Nhat, #abundance starting values
        beta0 = runif(1,0,1),   #given the log transform this value best to start off small
        beta1 = runif(1,0,1)) #,  #given the log transform this value best to start off small
        #beta2 = runif(1,0,100))    #random number between 0 and 100
