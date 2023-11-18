@@ -1,7 +1,6 @@
 library(statsecol)
 library(jagsUI)
 library(tidyverse)
-library(zoo)
 data("wildebeest")
 
 #exploratory mean-variance plot
@@ -11,27 +10,29 @@ data("wildebeest")
 #𝑁0 ∼ uniform(0,500k)
 #𝑁𝑡|𝑁𝑡−1 ∼ Poissonl(𝜆𝑡* (𝑁𝑡−1 - c𝑡−1))
 #log(𝜆𝑡) = 𝛽0 + 𝛽1R𝑡
-#𝑦|𝑁 ∼ N(N𝑡, σ𝑡)
-
-#alternative form explored in another model
-#𝑦|𝑁 ∼ binomial(𝑁,𝑝) 𝑡 𝑡 𝑡
+#𝑦𝑡|𝑁𝑡 ∼binomial(𝑁𝑡,𝑝𝑡)
 
 #CV is coefficient of variance: SE/E[X]
 #For the censuses in the 1960s we set the CV equal to 0.3, which is about twice the average CV from the censuses in the 1970s and 1980s and reflects a lower confidence in the early censuses (Sinclair, personal communication). The standard deviations for the censuses in the 1970s were derived from asymptotic normal theory, and in keeping with this we assume that the census data are normally distributed.
 
-#binomial variance is n*p*(1-p)
-#if initial CI assumptions are correctly formulated, then these should be p and q
-interimDat <- wildebeest %>% mutate(qhat = (1 - sqrt(1 - 4*(sehat^2)/(Nhat)))/2,
-                                    phat = (1 + sqrt(1 - 4*(sehat^2)/(Nhat)))/2)
-
 #get row numbers for all non-na values
 #manually expressed as c(2, 4, 6, 8, 12, 13, 18, 19, 23, 25, 27, 30)
 validObs <- which(!is.na(wildebeest$Nhat), arr.ind=TRUE)
-numYears <- nrow(wildebeest)
 
-wildebeestImpute <- na.locf(interimDat)
+#binomial variance is n*p*(1-p)
+#if initial CI assumptions are correctly formulated, then these should be p and q
+wildeImpute <- wildebeest %>% mutate(qhat = (1 - sqrt(1 - 4*(sehat^2)/(Nhat)))/2,
+                                 phat = (1 + sqrt(1 - 4*(sehat^2)/(Nhat)))/2)
 
-sink("wildebeestSSM1.txt")
+
+
+wildeImpute$qhat[is.na(wildeImpute$qhat)] <- 1
+wildeImpute$uci[is.na(wildeImpute$uci)] <- wildeImpute$uci[nrow(wildeImpute)]
+wildeImpute[is.na(wildeImpute)] <- 0
+
+numYears <- nrow(wildeImpute)
+  
+sink("wildebeestSSM2.txt")
 cat("
 model{
   #PRIORS
@@ -53,9 +54,9 @@ model{
   
   # Likelihood - Observation process
   for(tFilt in validYrs) { 
-    y[tFilt] ~ dnorm(N[tFilt], obsTau[tFilt])
+    #y[tFilt] ~ norm(N[tFilt], obsTau)
     #binomial fit fails
-    #y[tFilt] ~ dbin(p, N[tFilt])
+    y[tFilt] ~ dbin(p[tFilt], N[tFilt])
   }
   
   #DERIVED 
@@ -64,36 +65,32 @@ model{
 }", fill = TRUE)
 sink()
 
-wildebeestData <- list(nYrs = numYears,
-                      validYrs = validObs,
-                      obsTau = 1/(wildebeestImpute$sehat^2),
-                      y = wildebeestImpute$Nhat, 
-                      c = wildebeestImpute$Catch,
-                      X = wildebeestImpute$rain)
+wildebeestData2 <- list(nYrs = numYears,
+                       validYrs = validObs,
+                       p = wildeImpute$phat,
+                       y = wildeImpute$Nhat, 
+                       c = wildeImpute$Catch,
+                       X = wildeImpute$rain)
 
-wildebeestInits <- function() {
+wildebeestInits2 <- function() {
   list(#p = runif(1,0,1), #probability starting value
-       beta0 = runif(1,0,1),   #given the log transform this value best to start off small
-       beta1 = runif(1,0,1)) #,  #given the log transform this value best to start off small
-       #beta2 = runif(1,0,100))    #random number between 0 and 100
+    beta0 = runif(1,0,1),   #given the log transform this value best to start off small
+    beta1 = runif(1,0,1)) #,  #given the log transform this value best to start off small
+  #beta2 = runif(1,0,100))    #random number between 0 and 100
 }
 
-wildebeestParams <- c("beta0", "beta1", "N")#, "p")
+wildebeestParams2 <- c("beta0", "beta1", "N", "y")#, "p")
 
 nt <- 1
 nc <- 3
 nb <- 10000
 ni <- 100000 + nb
 
-wildebeestFit <- jags(data = wildebeestData,
-                      inits = wildebeestInits,
-                      parameters.to.save = wildebeestParams,
-                      model.file = "wildebeestSSM1.txt",
-                      n.chains = nc,
-                      n.iter = ni,
-                      n.burnin = nb,
-                      n.thin = nt)
-
-for(tFilt in validObs){
-  print(tFilt)
-}
+wildebeestFit2 <- jags(data = wildebeestData2,
+                       inits = wildebeestInits2,
+                       parameters.to.save = wildebeestParams2,
+                       model.file = "wildebeestSSM2.txt",
+                       n.chains = nc,
+                       n.iter = ni,
+                       n.burnin = nb,
+                       n.thin = nt)
