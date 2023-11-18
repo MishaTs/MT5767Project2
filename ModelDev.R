@@ -44,14 +44,14 @@ model{
   #beta2 ~ dnorm(0,0.01) 
   
   # Likelihood - State process
-  for (t in 2:nYrs) {
+  for (t in 2:(nYrs-1)) { #why are we leaving out the last year?
     #x is rain; add a lagged term maybe?
     log(lambda[t]) <- beta0 + beta1 * X[t] #+ beta2 * X[t-1]
     N[t] ~ dpois(lambda[t]*(N[t-1] - c[t-1])) #subtract removals last
   }
   
   # Likelihood - Observation process
-  for(tFilt in validYrs) {
+  for(tFilt in validYrs) { #why are we leaving out the last year?
     #Index out of range taking subset of  y
     y[tFilt] ~ dnorm(N[tFilt], obsTau[tFilt])
   }
@@ -63,7 +63,7 @@ model{
 sink()
 
 wildebeestData <- list(nYrs = numYears,
-                      validYrs = validObs,
+                      validYrs = validObs[1:length(validObs)-1],
                       obsTau = 1/(wildebeestImpute$sehat^2),
                       y = wildebeestImpute$Nhat, 
                       c = wildebeestImpute$Catch,
