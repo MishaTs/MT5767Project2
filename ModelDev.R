@@ -38,21 +38,21 @@ sink("wildebeestSSM1.txt")
 cat("
 model{
   #PRIORS
-  n0 ~ dunif(0,0.5)
-  N.est[1] <- n0
+  n0 ~ dunif(0,0.5) #no more than 500k individuals observed before 1970, so likely sensible?
+  N[1] <- n0 - c[1] #included for appearances, as catch before 1977 is 0
   beta0 ~ dnorm(0,0.01)
   beta1~dnorm(0,0.01) 
   p ~ dunif(0,1)
   
   # Likelihood - State process
-  for (t in 2:(nyrs-1)){
+  for (t in 2:(nyrs-1)) { #why are we stopping at t - 1?
     log(lambda[t-1]) <- beta0 + beta1 * X[t-1] #x is rain
-    N.est[t] ~ dpois(lambda[t-1]*N.est[t-1])
+    N[t] ~ dpois(lambda[t-1]*N[t-1] - c[t]) #subtract removals from expectation population size
   }
   
   # Likelihood - Observation process
-  for(t in 1:validYrs){
-    y[i] ~ dbin(p, N.est[t])
+  for(tFilt in 1:validYrs){
+    y[i] ~ dbin(p, N[tFilt]) #maybe try a normal approximation?
   }
   
   #DERIVED
