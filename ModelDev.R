@@ -46,8 +46,6 @@ model{
   for (t in 2:nYrs) {
     #x is rain; add a lagged term maybe?
     log(lambda[t]) <- beta0 + beta1 * X[t] #+ beta2 * X[t-1]
-    #nonzero values of removals break the function right now
-    #N[t-1] <- N[t-1] - c[t-1] #subtract removals last
     N[t] ~ dpois(lambda[t]*(N[t-1] - c[t-1])) #subtract removals last
   }
   
