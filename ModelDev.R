@@ -7,11 +7,25 @@ data("wildebeest")
 #exploratory mean-variance plot
 #ggplot(testDat, aes(x = Nhat, y = sehat)) + geom_point()
 
+#clearly non-normal
+ggplot(wildebeest) + 
+  geom_density(aes(x = Nhat),fill="#440154", color="#e9ecef", alpha=0.8) + 
+  geom_density(aes(x = uci), fill="#21918c", color="#e9ecef", alpha=0.8) + 
+  geom_density(aes(x = lci), fill="#fde725", color="#e9ecef", alpha=0.8) + 
+  theme_bw()
+#if specifying x as normal, then log(N) makes more sense
+#however, this is clearly non-normal from our limited data
+ggplot(testDat) + 
+  geom_density(aes(x = log(Nhat)),fill="#440154", color="#e9ecef", alpha=0.8) + 
+  geom_density(aes(x = log(uci)), fill="#21918c", color="#e9ecef", alpha=0.8) + 
+  geom_density(aes(x = log(lci)), fill="#fde725", color="#e9ecef", alpha=0.8) + 
+  theme_bw()
+
 #for the model:
 #𝑁0 ∼ uniform(0,500k)
-#𝑁𝑡|𝑁𝑡−1 ∼ Poissonl(𝜆𝑡* (𝑁𝑡−1 - c𝑡−1))
+#𝑁𝑡|𝑁𝑡−1 ∼ N(𝜆𝑡* (𝑁𝑡−1 - c𝑡−1), σ𝑡)
 #log(𝜆𝑡) = 𝛽0 + 𝛽1R𝑡
-#𝑦|𝑁 ∼ N(N𝑡, σ𝑡)
+#𝑦|𝑁 ∼ N(N𝑡, s𝑡)
 
 #alternative form explored in another model
 #𝑦|𝑁 ∼ binomial(𝑁,𝑝) 𝑡 𝑡 𝑡
@@ -32,6 +46,8 @@ numYears <- nrow(wildebeest)
 # Error in node N[19]: Invalid parent values
 # imputing data solves partially
 wildebeestImpute <- na.locf(wildebeest, na.rm = FALSE)
+#fill in 1960 with 1961 values too, since there's no better approximation
+#manually done to avoid wiping rain, catch, and year values
 wildebeestImpute[1,2:6] <- wildebeestImpute[2,2:6]
 
 sink("wildebeestSSM1.txt")
@@ -44,8 +60,8 @@ model{
   beta1 ~ dnorm(0,0.01) 
   
   # Likelihood - State process
-  for (t in 2:nYrs) { #why are we leaving out the last year?
-    #x is rain; add a lagged term maybe?
+  for (t in 2:nYrs) {
+    #x is rain; log transform to fix lambda as positive
     log(lambda[t]) <- beta0 + beta1 * X[t]
     N[t] ~ dpois(lambda[t]*(N[t-1] - c[t-1])) #subtract removals last
   }
@@ -73,7 +89,6 @@ wildebeestInits <- function() {
   list(N = wildebeestImpute$Nhat, #abundance starting values
        beta0 = runif(1,0,1),   #given the log transform this value best to start off small
        beta1 = runif(1,0,1)) #,  #given the log transform this value best to start off small
-       #beta2 = runif(1,0,100))    #random number between 0 and 100
 }
 
 wildebeestParams <- c("beta0", "beta1", "N")#, "p")
