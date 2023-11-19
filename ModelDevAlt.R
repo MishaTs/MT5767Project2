@@ -35,6 +35,11 @@ wildebeestImpute <- na.locf(wildebeest, na.rm = FALSE)
 #fill in 1960 with 1961 values too, since there's no better approximation
 #manually done to avoid wiping rain, catch, and year values
 wildebeestImpute[1,2:6] <- wildebeestImpute[2,2:6]
+wildebeestAlt <- wildebeestImpute %>% mutate(Nhat = Nhat * 1000,
+                                             sehat = sehat * 1000,
+                                             lci = lci * 1000,
+                                             uci = uci * 1000,
+                                             Catch = Catch * 1000)
 
 sink("wildebeestSSM1.txt")
 cat("

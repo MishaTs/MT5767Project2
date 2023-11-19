@@ -15,7 +15,7 @@ ggplot(wildebeest) +
   theme_bw()
 #if specifying x as normal, then log(N) makes more sense
 #however, this is clearly non-normal from our limited data
-ggplot(testDat) + 
+ggplot(wildebeest) + 
   geom_density(aes(x = log(Nhat)),fill="#440154", color="#e9ecef", alpha=0.8) + 
   geom_density(aes(x = log(uci)), fill="#21918c", color="#e9ecef", alpha=0.8) + 
   geom_density(aes(x = log(lci)), fill="#fde725", color="#e9ecef", alpha=0.8) + 
@@ -55,15 +55,21 @@ cat("
 model{
   #PRIORS
   n0 ~ dunif(0,0.6) #no more than 500k individuals observed before 1970
-  N[1] <- n0
-  beta0 ~ dnorm(0,0.01)
-  beta1 ~ dnorm(0,0.01) 
+  logN[1] <- n0
+  sigma ~ dunif(0,1) #much larger range than we see in real data; needs to be positive
+  tau <- sigma^-2
+  beta0 ~ dnorm(0, 0.01)
+  beta1 ~ dnorm(0, 0.01)
   
   # Likelihood - State process
   for (t in 2:nYrs) {
-    #x is rain; log transform to fix lambda as positive
-    log(lambda[t]) <- beta0 + beta1 * X[t]
-    N[t] ~ dpois(lambda[t]*(N[t-1] - c[t-1])) #subtract removals last
+    r[t] <- beta0 + beta1 * R[t]
+    logN[t] ~ dnorm((r[t] + logN[t-1] - logc[t-1]), tau) #subtract removals last
+  }
+  
+  # Derive population sizes on real scale
+  for (t in 2:nYrs) {
+    N[t] <- exp(logN[t])
   }
   
   # Likelihood - Observation process
@@ -71,27 +77,26 @@ model{
     #Index out of range taking subset of  y
     y[tFilt] ~ dnorm(N[tFilt], obsTau[tFilt])
   }
-  
-  #DERIVED 
-  #deltaN <- N[nYrs] - N[1] #total change in true population if interested
-  #think of what other summary statistics we might want estimated
 }", fill = TRUE)
 sink()
 
 wildebeestData <- list(nYrs = numYears,
                       validYrs = validObs[1:length(validObs)-1],
-                      obsTau = 1/(wildebeestImpute$sehat^2),
+                      obsTau = wildebeestImpute$sehat^-2,
                       y = wildebeestImpute$Nhat, 
-                      c = wildebeestImpute$Catch,
-                      X = wildebeestImpute$rain)
+                      logc = log(wildebeestImpute$Catch),
+                      R = wildebeestImpute$rain)
 
 wildebeestInits <- function() {
-  list(N = wildebeestImpute$Nhat, #abundance starting values
-       beta0 = runif(1,0,1),   #given the log transform this value best to start off small
-       beta1 = runif(1,0,1)) #,  #given the log transform this value best to start off small
+  list(logN = log(wildebeestImpute$Nhat), #abundance starting values
+       sigma = runif(1,0,1500), #tau starting value vaguely between the range of actual values 8 and 1206
+       beta0 = runif(1,-2,2),   #given the log transform this value best to start off small
+       beta1 = runif(1,-2,2))#,   #given the log transform this value best to start off small
+       #beta2 = runif(1,0,4),   #observed values cap at log(tauHat) = 2.07
+       #beta3 = runif(1,0,4))   #start wide and see if that's a problem
 }
 
-wildebeestParams <- c("beta0", "beta1", "N")#, "p")
+wildebeestParams <- c("beta0", "beta1", "N", "sigma")
 
 nt <- 1
 nc <- 3
