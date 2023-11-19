@@ -54,7 +54,7 @@ sink("wildebeestSSM1.txt")
 cat("
 model{
   #PRIORS
-  n0 ~ dunif(0,0.6) #no more than 500k individuals observed before 1970
+  n0 ~ dunif(-1,0.01) #no more than 500k individuals observed before 1970; roughly 368k mean
   logN[1] <- n0
   sigma ~ dunif(0,1) #much larger range than we see in real data; needs to be positive
   tau <- sigma^-2
