@@ -102,7 +102,7 @@ wilde_traj <- data.frame(Year = wildebeest$year,
 
 ggplot(data = wilde_traj) + 
   geom_ribbon(aes(x=Year, y=Mean, ymin=Lower, ymax=Upper),
-              fill="grey", alpha = 0.25) +
+              fill="cyan", alpha = 0.25) +
   geom_line(aes(x=Year, y=Mean), linewidth=1, color="blue") + 
   geom_point(aes(x=Year, y=Obs), size=1.2) +
   geom_line(data = na.omit(wilde_traj), aes(x=Year, y=Obs)) +
