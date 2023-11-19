@@ -54,8 +54,8 @@ sink("wildebeestSSM1.txt")
 cat("
 model{
   #PRIORS
-  n0 ~ dunif(-1,0.01) #no more than 500k individuals observed before 1970; roughly 368k mean
-  logN[1] <- n0
+  n0 ~ dunif(0,0.6) #no more than 500k individuals observed before 1970
+  N[1] <- n0
   sigma ~ dunif(0,1) #much larger range than we see in real data; needs to be positive
   tau <- sigma^-2
   beta0 ~ dnorm(0, 0.01)
@@ -64,12 +64,7 @@ model{
   # Likelihood - State process
   for (t in 2:nYrs) {
     r[t] <- beta0 + beta1 * R[t]
-    logN[t] ~ dnorm((r[t] + logN[t-1] - logc[t-1]), tau) #subtract removals last
-  }
-  
-  # Derive population sizes on real scale
-  for (t in 2:nYrs) {
-    N[t] <- exp(logN[t])
+    log(N[t]) ~ dnorm((r[t] + log(N[t-1] - c[t-1]), tau) #subtract removals last
   }
   
   # Likelihood - Observation process
@@ -84,7 +79,7 @@ wildebeestData <- list(nYrs = numYears,
                       validYrs = validObs[1:length(validObs)-1],
                       obsTau = wildebeestImpute$sehat^-2,
                       y = wildebeestImpute$Nhat, 
-                      logc = log(wildebeestImpute$Catch),
+                      c = wildebeestImpute$Catch,
                       R = wildebeestImpute$rain)
 
 wildebeestInits <- function() {
