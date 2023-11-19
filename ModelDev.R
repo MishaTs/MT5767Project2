@@ -64,7 +64,7 @@ model{
   # Likelihood - State process
   for (t in 2:nYrs) {
     r[t] <- beta0 + beta1 * R[t]
-    log(N[t]) ~ dnorm((r[t] + log(N[t-1] - c[t-1]), tau) #subtract removals last
+    log(N[t]) ~ dnorm((r[t] + log(N[t-1] - c[t-1])), tau) #subtract removals last
   }
   
   # Likelihood - Observation process
@@ -83,8 +83,8 @@ wildebeestData <- list(nYrs = numYears,
                       R = wildebeestImpute$rain)
 
 wildebeestInits <- function() {
-  list(logN = log(wildebeestImpute$Nhat), #abundance starting values
-       sigma = runif(1,0,1500), #tau starting value vaguely between the range of actual values 8 and 1206
+  list(N = wildebeestImpute$Nhat, #abundance starting values
+       sigma = runif(1,0,0.5), #tau starting value vaguely between the range of actual values 8 and 1206
        beta0 = runif(1,-2,2),   #given the log transform this value best to start off small
        beta1 = runif(1,-2,2))#,   #given the log transform this value best to start off small
        #beta2 = runif(1,0,4),   #observed values cap at log(tauHat) = 2.07
