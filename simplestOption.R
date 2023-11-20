@@ -18,7 +18,7 @@ wildebeestImpute <- na.locf(wildebeest, na.rm = FALSE)
 wildebeestImpute[1,2:6] <- wildebeestImpute[2,2:6]
 
 #Specify model in BUGS language
-sink("wildessmBasic.txt")
+sink("wildessmBasic1.txt")
 cat("
 model{
 
@@ -72,44 +72,44 @@ wildeparms <- c("beta0", "beta1", "sig.r", "lambda", "N.est")
 
 # MCMC settings
 ni <- 200000
-nt <- 1
+nt <- 6
 nb <- 100000
 nc <- 3
 
 #throws a warning letting us know that the initial 3 N values were unused
-wildeout <- jags(data = wildedata,
-                 inits = wildeinits,
-                 parameters.to.save = wildeparms,
-                 model.file = "wildessmBasic.txt",
-                 n.chains = nc,
-                 n.iter = ni,
-                 n.burnin = nb,
-                 n.thin = nt)
+wildeout1 <- jags(data = wildedata,
+                  inits = wildeinits,
+                  parameters.to.save = wildeparms,
+                  model.file = "wildessmBasic1.txt",
+                  n.chains = nc,
+                  n.iter = ni,
+                  n.burnin = nb,
+                  n.thin = nt)
 
-MCMCtrace(wildeout,                 #the fitted model
+MCMCtrace(wildeout1,                 #the fitted model
           params = wildeparms[1:3], #out parameters of interest
           iter = ni,                 #plot all iterations
           pdf = FALSE,               #DON'T write to a PDF
           ind = TRUE)                #chain specific densities
 
-MCMCsummary(wildeout,
+MCMCsummary(wildeout1,
             params = wildeparms[1:3]) #out parameters of interest
 
-wilde_traj <- data.frame(Year = wildebeest$year,
-                         Mean = wildeout$mean$N.est,
-                         Lower = wildeout$q2.5$N.est,
-                         Upper = wildeout$q97.5$N.est,
-                         Obs = wildebeest$Nhat,
-                         LowerObs = wildebeest$lci,
-                         UpperObs = wildebeest$uci)
+wilde_traj1 <- data.frame(Year = wildebeest$year,
+                          Mean = wildeout1$mean$N.est,
+                          Lower = wildeout1$q2.5$N.est,
+                          Upper = wildeout1$q97.5$N.est,
+                          Obs = wildebeest$Nhat,
+                          LowerObs = wildebeest$lci,
+                          UpperObs = wildebeest$uci)
 
 
-ggplot(data = wilde_traj) + 
+ggplot(data = wilde_traj1) + 
   geom_ribbon(aes(x=Year, y=Mean, ymin=Lower, ymax=Upper),
               fill="cyan", alpha = 0.25) +
   geom_line(aes(x=Year, y=Mean), linewidth=1, color="blue") + 
   geom_point(aes(x=Year, y=Obs), size=1.2) +
-  geom_line(data = na.omit(wilde_traj), aes(x=Year, y=Obs)) +
+  geom_line(data = na.omit(wilde_traj1), aes(x=Year, y=Obs)) +
   geom_errorbar(aes(x=Year, 
                     y=Obs,
                     ymin=LowerObs,
@@ -122,36 +122,36 @@ nproj <- 5
 #assume that illegal harvesting continues at current levels
 #use average observed rainfall for future projections
 #impute last year values for Nhat and sehat; they aren't referenced though
-wildedata_proj <- list(y = c(wildebeestImpute$Nhat, rep(wildebeestImpute$Nhat[nrow(wildebeestImpute)], nproj)), 
-                       nyrs = nrow(wildebeestImpute) + nproj, 
-                       validYrs = validObs,
-                       R = c(wildebeestImpute$rain, rep(mean(wildebeestImpute$rain), nproj)),
-                       obs.tau = c(wildebeestImpute$sehat^-2, rep(wildebeestImpute$sehat[nrow(wildebeestImpute)]^-2, nproj)),
-                       c = c(wildebeestImpute$Catch, rep(wildebeestImpute$Catch[nrow(wildebeestImpute)], nproj)))
+wildedata_proj1 <- list(y = c(wildebeest$Nhat, rep(wildebeest$Nhat[nrow(wildebeest)], nproj)), 
+                        nyrs = nrow(wildebeest) + nproj, 
+                        validYrs = validObs,
+                        R = c(wildebeest$rain, rep(mean(wildebeest$rain), nproj)),
+                        obs.tau = c(wildebeest$sehat^-2, rep(wildebeest$sehat[nrow(wildebeest)]^-2, nproj)),
+                        c = c(wildebeest$Catch, rep(wildebeest$Catch[nrow(wildebeest)], nproj)))
 
-wildeproj <- jags(data = wildedata_proj,
-                  inits = wildeinits,
-                  parameters.to.save = wildeparms,
-                  model.file = "wildessmBasic.txt",
-                  n.chains = nc,
-                  n.iter = ni,
-                  n.burnin = nb,
-                  n.thin = nt)
+wildeproj1 <- jags(data = wildedata_proj1,
+                   inits = wildeinits,
+                   parameters.to.save = wildeparms,
+                   model.file = "wildessmBasic1.txt",
+                   n.chains = nc,
+                   n.iter = ni,
+                   n.burnin = nb,
+                   n.thin = nt)
 
-wilde_proj <- data.frame(Year = c(wildebeest$year, 1990:1994),
-                         Mean = wildeproj$mean$N.est,
-                         Lower = wildeproj$q2.5$N.est,
-                         Upper = wildeproj$q97.5$N.est,
-                         Obs = c(wildebeest$Nhat,rep(NA,nproj)),
-                         LowerObs = c(wildebeest$lci,rep(NA,nproj)),
-                         UpperObs = c(wildebeest$uci,rep(NA,nproj)))
+wilde_proj1 <- data.frame(Year = c(wildebeest$year, 1990:1994),
+                          Mean = wildeproj1$mean$N.est,
+                          Lower = wildeproj1$q2.5$N.est,
+                          Upper = wildeproj1$q97.5$N.est,
+                          Obs = c(wildebeest$Nhat,rep(NA,nproj)),
+                          LowerObs = c(wildebeest$lci,rep(NA,nproj)),
+                          UpperObs = c(wildebeest$uci,rep(NA,nproj)))
 
-ggplot(data = wilde_proj) + 
+ggplot(data = wilde_proj1) + 
   geom_ribbon(aes(x=Year, y=Mean, ymin=Lower, ymax=Upper),
               fill="cyan", alpha = 0.25) +
   geom_line(aes(x=Year, y=Mean), linewidth=1, color="blue") + 
   geom_point(aes(x=Year, y=Obs), size=1.2) +
-  geom_line(data = na.omit(wilde_traj), aes(x=Year, y=Obs)) +
+  geom_line(data = na.omit(wilde_proj1), aes(x=Year, y=Obs)) +
   geom_errorbar(aes(x=Year, 
                     y=Obs,
                     ymin=LowerObs,
