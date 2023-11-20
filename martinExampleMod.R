@@ -14,8 +14,8 @@ wildeTrans <- wildebeest %>% mutate(logy = log(Nhat),
 #Specify model in BUGS language
 sink("wildessm.txt")
 cat("
-data{
-  logy <- log(y)
+data {
+  logc <- log(c)
 }
 model{
 
@@ -33,7 +33,7 @@ model{
     mu.r[t] <- beta0 + beta1*R[t]
     r[t] ~ dnorm(mu.r[t], tau.r)
     #logc[t] <- log(1 - c[t]/N.est[t])
-    logN.est[t+1] <- logN.est[t] + r[t] #+ logc[t]
+    logN.est[t+1] <- r[t] + logN.est[t] #+ logc[t]
   }
 
   # Likelihood - Observation process
