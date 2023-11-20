@@ -5,8 +5,11 @@ library(zoo)
 library(MCMCvis)
 data("wildebeest")
 
-#wildeTrans <- wildebeest %>% mutate(logy = log(Nhat),
-#                                    logse = sqrt(log(sehat^2/Nhat^2 + 1)))
+wildeTrans <- wildebeest %>% mutate(logy = log(Nhat),
+                                    loguci = log(uci),
+                                    loglci = log(lci),
+                                    logse = (loguci - logy)/1.96,
+                                    logse2 = (logy - loglci)/1.96)
 
 #Specify model in BUGS language
 sink("wildessm.txt")
@@ -19,13 +22,9 @@ model{
   # Priors and constraints
   log.n1 ~ dnorm(-1.3, 0.01)
   logN.est[1] <- log.n1 
-  #mu.r ~ dnorm(1, 0.001) 
   sig.r ~ dunif(0, 1) 
   sig2.r <- pow(sig.r, 2)
   tau.r <- pow(sig.r, -2)
-  sig.obs ~ dunif(0, 1) # Prior for sd of obs. process
-  sig2.obs <- pow(sig.obs, 2)
-  tau.obs <- pow(sig.obs, -2)
   beta0 ~ dnorm(0,0.001) 
   beta1 ~ dnorm(0,0.001)
 
@@ -33,12 +32,13 @@ model{
   for(t in 1:(nyrs-1)){
     mu.r[t] <- beta0 + beta1*R[t]
     r[t] ~ dnorm(mu.r[t], tau.r)
-    logN.est[t+1] <- logN.est[t] + r[t]
+    #logc[t] <- log(1 - c[t]/N.est[t])
+    logN.est[t+1] <- logN.est[t] + r[t] #+ logc[t]
   }
 
   # Likelihood - Observation process
   for (t in validYrs) {
-    logy[t] ~ dnorm(log(N.est[t]), tau.obs)
+    y[t] ~ dnorm(N.est[t], obs.tau[t])
   }
   
   # Derive population sizes on real scale
@@ -53,23 +53,23 @@ sink()
 wildedata <- list(y = wildebeestImpute$Nhat, 
                   nyrs = nrow(wildebeestImpute), 
                   validYrs = validObs,
-                  R = wildebeestImpute$rain)
+                  R = wildebeestImpute$rain,
+                  obs.tau = wildebeestImpute$sehat^-2,
+                  c = wildebeestImpute$Catch)
 
 # Initial values
 wildeinits <- function(){
   list(sig.r = runif(1, 0, 1), 
        beta0 = rnorm(1),
-       beta1 = rnorm(1),
-       #mu.r = rnorm(1),
-       sig.obs = runif(1, 0, 1))
+       beta1 = rnorm(1))
 }
 
 # Parameters monitored
-wildeparms <- c("beta0", "beta1", "sig.obs", "sig.r", "r", "N.est")
+wildeparms <- c("beta0", "beta1", "sig.r", "r", "N.est")
 
 # MCMC settings
 ni <- 200000
-nt <- 6
+nt <- 1
 nb <- 100000
 nc <- 3
 
@@ -83,13 +83,13 @@ wildeout <- jags(data = wildedata,
                   n.thin = nt)
 
 MCMCtrace(wildeout,                 #the fitted model
-          params = wildeparms[1:4], #out parameters of interest
+          params = wildeparms[1:3], #out parameters of interest
           iter = ni,                 #plot all iterations
           pdf = FALSE,               #DON'T write to a PDF
           ind = TRUE)                #chain specific densities
 
 MCMCsummary(wildeout,
-            params = wildeparms[1:4]) #out parameters of interest
+            params = wildeparms[1:3]) #out parameters of interest
 
 wilde_traj <- data.frame(Year = wildebeest$year,
                          Mean = wildeout$mean$N.est,
@@ -124,7 +124,9 @@ nproj <- 5
 wildedata_proj <- list(y = c(wildebeestImpute$Nhat, rep(wildebeestImpute$Nhat[nrow(wildebeestImpute)], nproj)), 
                       nyrs = nrow(wildebeestImpute) + nproj, 
                       validYrs = validObs,
-                      R = c(wildebeestImpute$rain, rep(mean(wildebeestImpute$rain), nproj)))
+                      R = c(wildebeestImpute$rain, rep(mean(wildebeestImpute$rain), nproj)),
+                      obs.tau = c(wildebeestImpute$sehat^-2, rep(wildebeestImpute$sehat[nrow(wildebeestImpute)]^-2, nproj)),
+                      c = c(wildebeestImpute$Catch, rep(wildebeestImpute$Catch[nrow(wildebeestImpute)], nproj)))
 
 wildeproj <- jags(data = wildedata_proj,
                  inits = wildeinits,
