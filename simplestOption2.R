@@ -18,7 +18,7 @@ wildebeestImpute <- na.locf(wildebeest, na.rm = FALSE)
 wildebeestImpute[1,2:6] <- wildebeestImpute[2,2:6]
 
 #Specify model in BUGS language
-sink("wildessmBasic.txt")
+sink("wildessmBasic2.txt")
 cat("
 model{
 
@@ -35,9 +35,9 @@ model{
 
   # Likelihood - State process
   for(t in 1:(nyrs-1)){
-    log.lambda[t] <- beta0 + beta1*R[t]
+    log.lambda[t] ~ dnorm((beta0 + beta1*R[t]), tau.r)
     log(lambda[t]) <- log.lambda[t]
-    N.est[t+1] ~ dnorm(lambda[t]*(N.est[t] - c[t]),tau.r)
+    N.est[t+1] <- lambda[t]*(N.est[t] - c[t])
   }
 
   # Likelihood - Observation process
@@ -51,12 +51,12 @@ sink()
 
 # Bundle data
 # Works with both imputed and raw data
-wildedata <- list(y = wildebeest$Nhat, 
-                  nyrs = nrow(wildebeest), 
+wildedata <- list(y = wildebeestImpute$Nhat, 
+                  nyrs = nrow(wildebeestImpute), 
                   validYrs = validObs,
-                  R = wildebeest$rain,
-                  obs.tau = wildebeest$sehat^-2,
-                  c = wildebeest$Catch)
+                  R = wildebeestImpute$rain,
+                  obs.tau = wildebeestImpute$sehat^-2,
+                  c = wildebeestImpute$Catch)
 
 # Initial values
 wildeinits <- function(){
@@ -64,7 +64,7 @@ wildeinits <- function(){
        beta1 = rnorm(1),
        sig.r = runif(1),
        N = wildebeestImpute$Nhat)#,
-       #N.est = wildebeestImpute$Nhat*1000)
+  #N.est = wildebeestImpute$Nhat*1000)
 }
 
 # Parameters monitored
@@ -72,15 +72,14 @@ wildeparms <- c("beta0", "beta1", "sig.r", "lambda", "N.est")
 
 # MCMC settings
 ni <- 200000
-nt <- 1
+nt <- 6
 nb <- 100000
 nc <- 3
 
-#throws a warning letting us know that the initial 3 N values were unused
 wildeout <- jags(data = wildedata,
                  inits = wildeinits,
                  parameters.to.save = wildeparms,
-                 model.file = "wildessmBasic.txt",
+                 model.file = "wildessmBasic2.txt",
                  n.chains = nc,
                  n.iter = ni,
                  n.burnin = nb,
@@ -132,7 +131,7 @@ wildedata_proj <- list(y = c(wildebeestImpute$Nhat, rep(wildebeestImpute$Nhat[nr
 wildeproj <- jags(data = wildedata_proj,
                   inits = wildeinits,
                   parameters.to.save = wildeparms,
-                  model.file = "wildessmBasic.txt",
+                  model.file = "wildessmBasic2.txt",
                   n.chains = nc,
                   n.iter = ni,
                   n.burnin = nb,
