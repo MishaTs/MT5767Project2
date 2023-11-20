@@ -1,3 +1,6 @@
+# This model is nearly functional but still incomplete
+# It should work with minimal edits from simplestOption2.R
+
 library(statsecol)
 library(jagsUI)
 library(tidyverse)
