@@ -10,6 +10,7 @@
 
 # User-specific files
 .Ruserdata
+/failed models
 
 # Example code in package build process
 *-Ex.R
