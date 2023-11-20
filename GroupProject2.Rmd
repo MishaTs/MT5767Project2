@@ -41,7 +41,7 @@ wildebeestImpute <- na.locf(wildebeest, na.rm = FALSE)
 wildebeestImpute[1,2:6] <- wildebeestImpute[2,2:6]
 
 #Specify model in BUGS language
-sink("wildessmBasic1.txt")
+
 cat("
 model{
 
@@ -69,8 +69,7 @@ model{
   }
   
 }
-",fill = TRUE)
-sink()
+",fill = TRUE, file='wildessmBasic1.txt')
 
 # Bundle data
 # Works with both imputed and raw data
@@ -98,6 +97,15 @@ ni <- 200000
 nt <- 6
 nb <- 100000
 nc <- 3
+
+wildeout1 <- jags(data = wildedata,
+                  inits = wildeinits,
+                  parameters.to.save = wildeparms,
+                  model.file = "wildessmBasic1.txt",
+                  n.chains = nc,
+                  n.iter = ni,
+                  n.burnin = nb,
+                  n.thin = nt)
 ```
 
 \subsectionfont{\raggedright}
@@ -166,15 +174,6 @@ Without looking at the model output, a clear decrease in animal density occurs o
 ### Appendix
 
 ```{r tracePlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Latent parameter trace plots; derived hierarchical parameters not shown but also converged"}
-wildeout1 <- jags(data = wildedata,
-                  inits = wildeinits,
-                  parameters.to.save = wildeparms,
-                  model.file = "wildessmBasic1.txt",
-                  n.chains = nc,
-                  n.iter = ni,
-                  n.burnin = nb,
-                  n.thin = nt)
-
 MCMCtrace(wildeout1,                 #the fitted model
           params = wildeparms[1:3], #out parameters of interest
           iter = ni,                 #plot all iterations
@@ -186,7 +185,7 @@ MCMCtrace(wildeout1,                 #the fitted model
 knitr::kable(MCMCsummary(wildeout1,params = wildeparms[1:3]))
 ```
 
-```{r projectedValues, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Projected values for true and estimated wildebeest population sizes"}
+```{r computeProj, echo = FALSE, message = FALSE, warning = FALSE, include = FALSE}
 #project values forward 5 years from 1990-1994
 nproj <- 5
 
@@ -216,6 +215,9 @@ wilde_proj1 <- data.frame(Year = c(wildebeest$year, 1990:1994),
                           Obs = c(wildebeest$Nhat,rep(NA,nproj)),
                           LowerObs = c(wildebeest$lci,rep(NA,nproj)),
                           UpperObs = c(wildebeest$uci,rep(NA,nproj)))
+```
+
+```{r projectedValues, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Projected values for true and estimated wildebeest population sizes"}
 
 ggplot(data = wilde_proj1) + 
   geom_ribbon(aes(x=Year, y=Mean, ymin=Lower, ymax=Upper),
@@ -231,10 +233,6 @@ ggplot(data = wilde_proj1) +
 ```
 
 ```{r lambdaPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Caption"}
-
-```
-
-```{r throwawaySegment, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Caption"}
 
 ```
 
