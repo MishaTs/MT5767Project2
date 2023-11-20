@@ -1,0 +1,234 @@
+---
+title: "Changing Tides of Conservation: Impact of Orkney Offshore Windfarm on Marine Animals"
+date: "`r format(Sys.Date(), format='%d %B %Y')`"
+geometry: margin = 2cm
+fontsize: 11pt
+urlcolor: blue
+output: 
+  bookdown::pdf_document2:
+    toc: false
+    number_sections: false
+papersize: a4
+header-includes:
+  - \usepackage{float}
+  - \usepackage{sectsty}
+  - \usepackage{paralist}
+  - \usepackage{fancyhdr}
+  - \usepackage{dcolumn}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(scales)
+library(nlme)
+library(knitr)
+library(viridis)
+library(latex2exp)
+library(kableExtra)
+
+EIA <- read.csv("EIA.csv")
+EIA <- EIA %>% mutate(density = count/area,
+                      sqrtdensity = sqrt(density))
+EIA <- EIA %>% mutate(block = paste(Year, MonthOfYear, DayOfMonth, GridCode, sep = ''))
+EIA2 <- EIA %>% arrange(block, Year, MonthOfYear, DayOfMonth, GridCode)
+EIA3 <- EIA2 %>% mutate(datetime = make_datetime(day = DayOfMonth, 
+                                                 month = MonthOfYear, 
+                                                 year = 2000 + Year, 
+                                                 hour = observationhour),
+                        date = as.Date(datetime))
+fit.gls.exp <- gls(sqrtdensity ~ tidestate + observationhour + impact + x.pos + y.pos + MonthOfYear + impact:x.pos + impact:y.pos, data = EIA, weights=varExp(), method = 'ML')
+glsExpPlotAR2<- gls(sqrtdensity ~ tidestate + observationhour + impact + x.pos + y.pos + MonthOfYear + impact:x.pos + impact:y.pos, 
+                    data = EIA2, weights=varExp(),
+                    correlation=corARMA(p = 2, q = 0, form = ~ 1 | block), method="ML")
+glsExpFTested <- update(glsExpPlotAR2, .~. -impact:y.pos -MonthOfYear -y.pos -impact:x.pos)
+```
+
+\subsectionfont{\raggedright}
+\subsubsectionfont{\raggedright}
+
+\pagenumbering{gobble}
+
+\begin{centering}
+
+\Large
+{\bf Practical 2: Executive Summary}
+
+\vspace{5cm}
+
+```{r uni_logo, echo=F, out.width="50%"}
+knitr::include_graphics("01-standard-vertical-black-text.png")
+```
+
+{\bf School of Mathematics and Statistics}
+
+\vspace{1 cm}
+
+\normalsize
+in partial fulfilment of the requirements for \\
+MT5761: Statistical Modelling with GLMs \\
+
+\end{centering}
+
+\newpage
+
+### Introduction
+
+Governments have increasingly embraced renewable infrastructure projects as a solution to carbon emission woes. A beneficiary of this appetite for green energy, Scotland's European Marine Energy Centre (EMEC) operates offshore wave and tidal test sites in Orkney (*reference areas*) off the western coasts of [Billia Croo in Mainland](https://www.emec.org.uk/facilities/wave-test-site/) and [Fall of Warness in Eday](https://www.emec.org.uk/facilities/tidal-test-site/), respectively. As such locations engender possible impacts on marine animals---namely birds, fish, cetaceans---this report summarises preliminary [environmental impact assessment (EIA)](https://www.mygov.scot/eia) results from provided, simulated data of an unknown marine species and site (*survey area*) before and after potential wind turbine construction for EIA reporting. Notably, no wind turbines have been constructed in the reference areas to date---only tidal and wave turbines (i.e., energy converters or ECs). Even so, this summary documents potential changes from proposed construction to EMEC decision-makers, regulators, and community members.
+
+### Analysis
+
+To understand impacts on animals, we first selected the ideal measure of their abundance. Looking at presence/absence of animals rather than their numerical counts would have understated the impact of construction: we are concerned not only if animals wholly disappeared but also if they appeared in smaller numbers. As the survey area is divided into grids, we chose to measure density: $\frac{\#~animals}{grid~area~(km^2)}$ (Figure \@ref(fig:densityPlot)). Unavoidably, all statistical models assume a specific data structure to generate numeric results. Because today's observed animal populations result from yesterday's, certain requirements for a standard linear model cannot be assumed. Instead, a non-linear [generalised least squares (GLS)](https://www.sciencedirect.com/topics/mathematics/generalized-least-squares) approach incorporated the ways that animal populations vary over time. First, Figure \@ref(fig:meanVarGLSPlot) demonstrates this model's exponential (upwards curved) nature---this fit better with measuring $\sqrt{density}$ rather than just $density$ from the linear model. Then, drawing on the previous two time periods seemed the best approach for this specific data compared to the basic model (Figure \@ref(fig:residARPlot)).
+
+Nine helpful variables assisted in analysis; while different models preferred different combinations, the final model needed just four---tide state, hour, x position, and construction stage. Tide state indicated which of ebb, flood, and slack tides were observed for a given horizontal coordinate (x position between `r min(EIA$x.pos)` and `r max(EIA$x.pos)`) at some hour (between `r paste0("0",min(EIA$observationhour),":00")` and `r paste0(max(EIA$observationhour),":00")`). Construction stage was either 0 before construction (2009-2010) and 1 afterwards (2011-2012).
+
+### Results
+
+Without looking at the model output, a clear decrease in animal density occurs over the survey period (Figure \@ref(fig:densityYrPlot)). The GLS model confirms these results at a high precision (Table \@ref(tab:regOutput))---the probability of no impact from construction is ~0% given the data---with 0.009 fewer animals per $km^2$ after construction. With `r round(sum(EIA$area), 0)` $km^2$ in the survey area, a total drop of 213 animals can be linked to wind turbine construction. The remaining three variables were all highly significant (less than 3% probability of seeing our data if there was no relationship with $\sqrt{density}$), but their effects on animal density were smaller than windfarm construction. Having attempted several linear and GLS models, Table \@ref(tab:regOutput)'s model ultimately shows the lowest error and best-suited information criteria.
+
+### Conclusion
+
+Future analyses should use more analogous data to simulate infrastructure-specific impacts: while wind turbines extend far above the sea surface, wave and tidal ECs operate at or below the water level. Even so, our model decently unpacks the impact on animals within the survey area and time period given data limitations, though we cannot generalise to impacts **during** construction due to data gaps (Figure \@ref(fig:densityYrBin)). In future work, we would explicitly account for geography---animal populations depend on spatial closeness similarly to time. For now, models consistently show dropping animal abundance after windfarm construction, so affected stakeholders should determine allowable levels.
+
+\newpage
+### Appendix
+
+```{r densityPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Animal density averaged across all surveyed time periods plotted across the survey area by x and y position."}
+densityDat <- EIA3 %>% group_by(GridCode, x.pos, y.pos) %>% summarise(mean = mean(density))
+
+densityPlot <- ggplot(densityDat) + 
+  geom_tile(aes(x = x.pos, y = y.pos, fill = mean, height = 1000, width = 1000)) + 
+  scale_fill_viridis_c() +
+  theme_bw() + 
+  coord_equal() + 
+  xlab("x position") + 
+  ylab("y position") + 
+  ggtitle("Average Animal Density across Survey Area") + 
+  labs(fill = "Mean animal density")
+
+densityPlot
+```
+
+```{r meanVarGLSPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap = "Both basic and adjusted GLS models show a curved relationship between $\\sqrt{animal~density}$ and model error variance. Predicted values were grouped into 20 bins to clearly illustrate the relationship with variance (how incorrect the model is for a predicted value). Low values of $\\sqrt{density}$ fit well but the original model struggles as variance increases; the adjusted model consistently fits better. The curved trend is only from the original model."}
+
+cut.fit2 <- cut(fitted(fit.gls.exp), 
+               breaks = quantile(fitted(fit.gls.exp), 
+                                 probs = seq(0, 1, length = 20)))
+meansGLS <- tapply(fitted(fit.gls.exp), cut.fit2, mean)
+varsGLS <- tapply(residuals(fit.gls.exp), cut.fit2, var)
+fittedGLS <- (summary(fit.gls.exp)$sigma^2)*exp(2*coef(fit.gls.exp$model)*meansGLS) 
+dfGLS <- data.frame(meansGLS,varsGLS,fittedGLS)
+colnames(dfGLS)=c("Means","Vars","Fitted")
+dfGLS <- dfGLS %>% mutate(Model = "Original")
+
+
+cut.fit <- cut(fitted(glsExpFTested), 
+               breaks = quantile(fitted(glsExpFTested), 
+                                 probs = seq(0, 1, length = 20)))
+means1 <- tapply(fitted(glsExpFTested), cut.fit, mean)
+vars1 <- tapply(residuals(glsExpFTested), cut.fit, var)
+fitted1 <- (summary(glsExpFTested)$sigma^2)*exp(2*coef(glsExpFTested$model)*means1) 
+df1 <- data.frame(means1,vars1,fitted1) 
+colnames(df1)=c("Means","Vars","Fitted")
+df1 <- df1 %>% mutate(Model = "Adjusted")
+
+meanVarDat <- rbind(df1, dfGLS)
+
+meanVarGLS <- ggplot(meanVarDat, aes(x=Means, y=Vars, colour = Model, shape = Model)) + 
+  geom_point() +
+  theme_bw() +
+  geom_line(data = meanVarDat %>% filter(Model == "Original"), aes(Means,Fitted),color="#31688e") + 
+  scale_colour_manual(values = c(Original = "#440154", Adjusted = "#21918c")) +
+  xlab(TeX("Binned means of predicted $\\sqrt{density}$")) + 
+  ylab("Model error variance") + 
+  ggtitle(TeX("Mean-Variance Plot for GLS Model of $\\sqrt{Animal~Density}$"))
+
+meanVarGLS
+```
+
+```{r residARPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="As measured by an ACF (autoregressive correlation function), model errors show improvement after accounting for the preceding two time periods (a.k.a. lags #1 and #2) compared to the original model. Model error (auto)correlation at lag #0 is always 1. Dashed lines suggest the limits for reasonable autocorrelation."}
+origResids <- acf(residuals(fit.gls.exp, type = 'response'), plot = FALSE)
+origACF <- data.frame(Autocorrelation = origResids$acf, Lag = origResids$lag) %>% mutate(Type = "Original")
+adjResids <- acf(residuals(glsExpFTested, type = 'normalized'), plot = FALSE)
+adjACF <- data.frame(Autocorrelation = adjResids$acf, Lag = adjResids$lag) %>% mutate(Type = "Adjusted")
+arDat <- rbind(origACF, adjACF) %>% 
+  arrange(Type) %>%    # First sort by type This sort the dataframe but NOT the factor levels
+  mutate(Type = factor(Type, levels=c("Original","Adjusted")))
+
+
+arPlot <- ggplot(arDat, aes(x = Lag, y = Autocorrelation, fill = Type)) + 
+  geom_area() + 
+  scale_fill_viridis_d() + 
+  theme_bw() +
+  geom_hline(yintercept=2/sqrt(origResids$n.used), linetype = "dashed") +
+  geom_hline(yintercept=-2/sqrt(origResids$n.used), linetype = "dashed") +
+  scale_y_continuous(limits = c(NA, 1)) +
+  xlab("Time periods (lag #__) prior to current time (lag #0)") + 
+  ylab("Correlation between lag #0 and and lag #__") + 
+  ggtitle("Original versus Adjusted Model Autocorrelation")
+
+arPlot
+```
+
+```{r densityYrPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Animal density averaged across all surveyed time periods within a year plotted across the survey area by x and y position. Density clearly decreases after construction (2011-2012) compared to before (2009-2010)."}
+densityYrGridDat <- EIA3 %>% group_by(Year, GridCode, x.pos, y.pos) %>% summarise(mean = mean(density)) %>%
+  mutate(yr = 2000 + Year)
+
+densityYr <- ggplot(densityYrGridDat) + 
+  geom_tile(aes(x = x.pos, y = y.pos, fill = mean, height = 1000, width = 1000)) + 
+  scale_fill_viridis_c() +
+  theme_bw() + 
+  coord_equal() + 
+  facet_wrap(~yr) + 
+  xlab("x position") + 
+  ylab("y position") + 
+  ggtitle("Average Animal Density across Survey Area per Year") + 
+  labs(fill = "Mean animal density")
+
+densityYr
+```
+
+```{r densityYrBin, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Animal density averaged across all surveyed areas across time: measured in hours, days, months, and years. Density is highly volitile when measured but also unobserved from March 2010 to 2011. Unfortunately, observations are assymetric across time despite the GLS model assuming equal distance between each time point."}
+densityYrDat <- EIA3 %>% group_by(datetime) %>% summarise(meanDensity = mean(density))
+
+densityYrLine <- ggplot(densityYrDat, aes(x = datetime, y = meanDensity)) + 
+  geom_line() + 
+  theme_bw() +
+  scale_fill_viridis_c() +
+  scale_x_datetime(breaks="3 months", minor_breaks = "1 month", 
+                   limits = c(as.POSIXct("01/03/2009", format = c("%d/%m/%Y")), 
+                              as.POSIXct("01/03/2012", format = c("%d/%m/%Y"))), 
+                   labels = label_date("%m/%y")) +
+  xlab("Time of observation (Month/Year)") + 
+  ylab("Mean animal density") + 
+  ggtitle("Average Observed Hourly Density across the Entire Survey Area")
+
+densityYrLine
+```
+
+```{r regOutput, echo = FALSE}
+regOutput <- data.frame(coef(summary(glsExpFTested)))
+regCleaned <- regOutput %>% mutate(Value = round(Value^2 * ifelse(Value<0,-1,1),3),
+                                   Std.Error = round(`Std.Error`,3),
+                                   t.value = round(`t.value`,1),
+                                   p.value = round(`p.value`,2))
+rownames(regCleaned) <- c("Intercept",
+                           "Flooded tide",
+                           "Slack tide",
+                           "Hour of day",
+                           "Construction stage",
+                           "x position")
+knitr::kable(regCleaned, align="c",
+             format = "latex",
+             col.names = c("Regressor" ,
+                           "Effect Magnitude",
+                           "Standard Error",
+                           "t Value",
+                           "p Value"),
+             caption = "GLS Regression Model Output") %>% 
+  kable_classic(full_width = F) %>% 
+  footnote(general_title = "Note:", 
+           footnote_as_chunk = TRUE,
+           threeparttable = TRUE,
+           general = "Effect Magnitude is the impact of a unit change in a regressor on animal density (an increase if positive and a decrease if negative). Standard error signifies the uncertainty surrounding the effect magnitudes, which are measured using t and p values. If p < 0.05, then re-estimating the effect will result in a nonzero value at least 95% of the time. Here, the x position effect is technically non-zero but very small. Construction stage shows a one-off effect of conducting construction, and effects from tidestates are relative to ebb tides.")
+```
