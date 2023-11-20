@@ -1,5 +1,5 @@
 ---
-title: "Changing Tides of Conservation: Impact of Orkney Offshore Windfarm on Marine Animals"
+title: "Interim Title"
 author: "Muntasir Akash, Misha Tseitlin"
 date: "`r format(Sys.Date(), format='%d %B %Y')`"
 geometry: margin = 2cm
@@ -21,29 +21,24 @@ header-includes:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(statsecol)
+library(jagsUI)
 library(tidyverse)
-library(scales)
-library(nlme)
-library(knitr)
-library(viridis)
-library(latex2exp)
-library(kableExtra)
+library(zoo)
+library(MCMCvis)
+data("wildebeest")
 
-EIA <- read.csv("EIA.csv")
-EIA <- EIA %>% mutate(density = count/area,
-                      sqrtdensity = sqrt(density))
-EIA <- EIA %>% mutate(block = paste(Year, MonthOfYear, DayOfMonth, GridCode, sep = ''))
-EIA2 <- EIA %>% arrange(block, Year, MonthOfYear, DayOfMonth, GridCode)
-EIA3 <- EIA2 %>% mutate(datetime = make_datetime(day = DayOfMonth, 
-                                                 month = MonthOfYear, 
-                                                 year = 2000 + Year, 
-                                                 hour = observationhour),
-                        date = as.Date(datetime))
-fit.gls.exp <- gls(sqrtdensity ~ tidestate + observationhour + impact + x.pos + y.pos + MonthOfYear + impact:x.pos + impact:y.pos, data = EIA, weights=varExp(), method = 'ML')
-glsExpPlotAR2<- gls(sqrtdensity ~ tidestate + observationhour + impact + x.pos + y.pos + MonthOfYear + impact:x.pos + impact:y.pos, 
-                    data = EIA2, weights=varExp(),
-                    correlation=corARMA(p = 2, q = 0, form = ~ 1 | block), method="ML")
-glsExpFTested <- update(glsExpPlotAR2, .~. -impact:y.pos -MonthOfYear -y.pos -impact:x.pos)
+#get row numbers for all non-na values
+#manually expressed as c(2, 4, 6, 8, 12, 13, 18, 19, 23, 25, 27, 30)
+validObs <- which(!is.na(wildebeest$Nhat), arr.ind=TRUE)
+numYears <- nrow(wildebeest)
+
+# Error in node N[19]: Invalid parent values
+# imputing data solves partially
+wildebeestImpute <- na.locf(wildebeest, na.rm = FALSE)
+#fill in 1960 with 1961 values too, since there's no better approximation
+#manually done to avoid wiping rain, catch, and year values
+wildebeestImpute[1,2:6] <- wildebeestImpute[2,2:6]
 ```
 
 \subsectionfont{\raggedright}
@@ -54,7 +49,7 @@ glsExpFTested <- update(glsExpPlotAR2, .~. -impact:y.pos -MonthOfYear -y.pos -im
 \begin{centering}
 
 \Large
-{\bf Practical 2: Executive Summary}
+{\bf Practical 2: State-Space Model for Wildebeest Population Dynamics}
 
 \vspace{5cm}
 
@@ -68,7 +63,7 @@ knitr::include_graphics("01-standard-vertical-black-text.png")
 
 \normalsize
 in partial fulfilment of the requirements for \\
-MT5761: Statistical Modelling with GLMs \\
+MT5767: Modelling Wildlife Population Dynamics \\
 
 \end{centering}
 
@@ -78,19 +73,19 @@ MT5761: Statistical Modelling with GLMs \\
 
 Governments have increasingly embraced renewable infrastructure projects as a solution to carbon emission woes. A beneficiary of this appetite for green energy, Scotland's European Marine Energy Centre (EMEC) operates offshore wave and tidal test sites in Orkney (*reference areas*) off the western coasts of [Billia Croo in Mainland](https://www.emec.org.uk/facilities/wave-test-site/) and [Fall of Warness in Eday](https://www.emec.org.uk/facilities/tidal-test-site/), respectively. As such locations engender possible impacts on marine animals---namely birds, fish, cetaceans---this report summarises preliminary [environmental impact assessment (EIA)](https://www.mygov.scot/eia) results from provided, simulated data of an unknown marine species and site (*survey area*) before and after potential wind turbine construction for EIA reporting. Notably, no wind turbines have been constructed in the reference areas to date---only tidal and wave turbines (i.e., energy converters or ECs). Even so, this summary documents potential changes from proposed construction to EMEC decision-makers, regulators, and community members.
 
-### Analysis
+### Methodology
 
+##### Model Formulation
 To understand impacts on animals, we first selected the ideal measure of their abundance. Looking at presence/absence of animals rather than their numerical counts would have understated the impact of construction: we are concerned not only if animals wholly disappeared but also if they appeared in smaller numbers. As the survey area is divided into grids, we chose to measure density: $\frac{\#~animals}{grid~area~(km^2)}$ (Figure \@ref(fig:densityPlot)). Unavoidably, all statistical models assume a specific data structure to generate numeric results. Because today's observed animal populations result from yesterday's, certain requirements for a standard linear model cannot be assumed. Instead, a non-linear [generalised least squares (GLS)](https://www.sciencedirect.com/topics/mathematics/generalized-least-squares) approach incorporated the ways that animal populations vary over time. First, Figure \@ref(fig:meanVarGLSPlot) demonstrates this model's exponential (upwards curved) nature---this fit better with measuring $\sqrt{density}$ rather than just $density$ from the linear model. Then, drawing on the previous two time periods seemed the best approach for this specific data compared to the basic model (Figure \@ref(fig:residARPlot)).
 
-Nine helpful variables assisted in analysis; while different models preferred different combinations, the final model needed just four---tide state, hour, x position, and construction stage. Tide state indicated which of ebb, flood, and slack tides were observed for a given horizontal coordinate (x position between `r min(EIA$x.pos)` and `r max(EIA$x.pos)`) at some hour (between `r paste0("0",min(EIA$observationhour),":00")` and `r paste0(max(EIA$observationhour),":00")`). Construction stage was either 0 before construction (2009-2010) and 1 afterwards (2011-2012).
 
-### Results
+#### Model Implementation
+Explain MCMC. Initial values. Mention JAGS in R. Data source, processing, cleaning. 
+
+
+### Results and Discussion
 
 Without looking at the model output, a clear decrease in animal density occurs over the survey period (Figure \@ref(fig:densityYrPlot)). The GLS model confirms these results at a high precision (Table \@ref(tab:regOutput))---the probability of no impact from construction is ~0% given the data---with 0.009 fewer animals per $km^2$ after construction. With `r round(sum(EIA$area), 0)` $km^2$ in the survey area, a total drop of 213 animals can be linked to wind turbine construction. The remaining three variables were all highly significant (less than 3% probability of seeing our data if there was no relationship with $\sqrt{density}$), but their effects on animal density were smaller than windfarm construction. Having attempted several linear and GLS models, Table \@ref(tab:regOutput)'s model ultimately shows the lowest error and best-suited information criteria.
-
-### Conclusion
-
-Future analyses should use more analogous data to simulate infrastructure-specific impacts: while wind turbines extend far above the sea surface, wave and tidal ECs operate at or below the water level. Even so, our model decently unpacks the impact on animals within the survey area and time period given data limitations, though we cannot generalise to impacts **during** construction due to data gaps (Figure \@ref(fig:densityYrBin)). In future work, we would explicitly account for geography---animal populations depend on spatial closeness similarly to time. For now, models consistently show dropping animal abundance after windfarm construction, so affected stakeholders should determine allowable levels.
 
 \newpage
 ### Appendix
@@ -208,7 +203,7 @@ densityYrLine <- ggplot(densityYrDat, aes(x = datetime, y = meanDensity)) +
 densityYrLine
 ```
 
-# Code Supplement
+### Code Supplement
 
 ```{r codeSupplement, include  = TRUE, echo = FALSE}
 library(statsecol)
