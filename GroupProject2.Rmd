@@ -1,5 +1,5 @@
 ---
-title: "Interim Title"
+title: "**A Gnu Approach: Bayesian Analysis of 20th Century Serengeti Wildebeest**"
 author: "Muntasir Akash, Misha Tseitlin"
 date: "`r format(Sys.Date(), format='%d %B %Y')`"
 geometry: margin = 2cm
@@ -10,7 +10,6 @@ output:
     toc: false
     number_sections: false
 papersize: a4
-bibliography: MT5767Project2.bib
 header-includes:
   - \usepackage{float}
   - \usepackage{sectsty}
@@ -19,13 +18,14 @@ header-includes:
   - \usepackage{dcolumn}
 ---
 
-```{r setup, include=FALSE}
+```{r setupJAGS, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(statsecol)
 library(jagsUI)
 library(tidyverse)
 library(zoo)
 library(MCMCvis)
+library(knitr)
 data("wildebeest")
 
 #get row numbers for all non-na values
@@ -39,6 +39,65 @@ wildebeestImpute <- na.locf(wildebeest, na.rm = FALSE)
 #fill in 1960 with 1961 values too, since there's no better approximation
 #manually done to avoid wiping rain, catch, and year values
 wildebeestImpute[1,2:6] <- wildebeestImpute[2,2:6]
+
+#Specify model in BUGS language
+sink("wildessmBasic1.txt")
+cat("
+model{
+
+  # Priors and constraints
+  #this prior is quite irrelevant to the final data spread: tested between 0.5 and 3
+  #0.7 is the most suitable option theoretorically
+  n1 ~ dunif(0,0.7)
+  N.est[1] <- n1
+  beta0 ~ dnorm(0,0.001) 
+  beta1 ~ dnorm(0,0.001)
+  sig.r ~ dunif(0, 1)
+  sig2.r <- pow(sig.r, 2)
+  tau.r <- pow(sig.r, -2)
+
+  # Likelihood - State process
+  for(t in 1:(nyrs-1)){
+    log.lambda[t] <- beta0 + beta1*R[t]
+    log(lambda[t]) <- log.lambda[t]
+    N.est[t+1] ~ dnorm(lambda[t]*(N.est[t] - c[t]),tau.r)
+  }
+
+  # Likelihood - Observation process
+  for (t in validYrs) {
+    y[t] ~ dnorm(N.est[t], obs.tau[t])
+  }
+  
+}
+",fill = TRUE)
+sink()
+
+# Bundle data
+# Works with both imputed and raw data
+wildedata <- list(y = wildebeest$Nhat, 
+                  nyrs = nrow(wildebeest), 
+                  validYrs = validObs,
+                  R = wildebeest$rain,
+                  obs.tau = wildebeest$sehat^-2,
+                  c = wildebeest$Catch)
+
+# Initial values
+wildeinits <- function(){
+  list(beta0 = rnorm(1),
+       beta1 = rnorm(1),
+       sig.r = runif(1),
+       N = wildebeestImpute$Nhat)#,
+       #N.est = wildebeestImpute$Nhat*1000)
+}
+
+# Parameters monitored
+wildeparms <- c("beta0", "beta1", "sig.r", "lambda", "N.est")
+
+# MCMC settings
+ni <- 200000
+nt <- 6
+nb <- 100000
+nc <- 3
 ```
 
 \subsectionfont{\raggedright}
@@ -48,19 +107,28 @@ wildebeestImpute[1,2:6] <- wildebeestImpute[2,2:6]
 
 \begin{centering}
 
-\Large
-{\bf Practical 2: State-Space Model for Wildebeest Population Dynamics}
+\vspace{0.5cm}
 
-\vspace{5cm}
+\Large
+{\bf Project 2: State-Space Model for Wildebeest Population Dynamics}
+
+\vspace{1.5cm}
+Contribution Statement
+
+\normalsize
+
+This report jointly involved collaborative discussion, coding, and writing by MA and MT. MT coded four models, and MA coded one model; one of MT's models was selected for this report. MA drove report content, model evaluation, and model selection. An unbiased £1 coin mediated all disputes. For more detail on individual contributions, please reference the \href{https://github.com/MishaTs/MT5767Project2/}{GitHub}.
+
+\vspace{0.5cm}
 
 ```{r uni_logo, echo=F, out.width="50%"}
 knitr::include_graphics("01-standard-vertical-black-text.png")
 ```
 
+\Large
 {\bf School of Mathematics and Statistics}
 
-\vspace{1 cm}
-
+\vspace{0.5 cm}
 \normalsize
 in partial fulfilment of the requirements for \\
 MT5767: Modelling Wildlife Population Dynamics \\
@@ -71,141 +139,108 @@ MT5767: Modelling Wildlife Population Dynamics \\
 
 ### Introduction
 
-Governments have increasingly embraced renewable infrastructure projects as a solution to carbon emission woes. A beneficiary of this appetite for green energy, Scotland's European Marine Energy Centre (EMEC) operates offshore wave and tidal test sites in Orkney (*reference areas*) off the western coasts of [Billia Croo in Mainland](https://www.emec.org.uk/facilities/wave-test-site/) and [Fall of Warness in Eday](https://www.emec.org.uk/facilities/tidal-test-site/), respectively. As such locations engender possible impacts on marine animals---namely birds, fish, cetaceans---this report summarises preliminary [environmental impact assessment (EIA)](https://www.mygov.scot/eia) results from provided, simulated data of an unknown marine species and site (*survey area*) before and after potential wind turbine construction for EIA reporting. Notably, no wind turbines have been constructed in the reference areas to date---only tidal and wave turbines (i.e., energy converters or ECs). Even so, this summary documents potential changes from proposed construction to EMEC decision-makers, regulators, and community members.
+Travelling throughout the Tanzanian Serengeti, the blue wildebeest (Connochaetes taurinus) is a keystone species that defines the African grasslands motivates study among ecologists, land managers, and governments. In their travels, wildebeest must contend with threats like rinderpest and poaching while also depending on environmental and ecological processes, from rain to birth rates. Looking back to historical trends, this report uses 1960--1989 measures of wildebeest populations for estimating a Bayesian state space model to understand population sizes, growth rates, and relationships to factors like rainfall while accounting for poaching. 
 
 ### Methodology
 
-##### Model Formulation
-To understand impacts on animals, we first selected the ideal measure of their abundance. Looking at presence/absence of animals rather than their numerical counts would have understated the impact of construction: we are concerned not only if animals wholly disappeared but also if they appeared in smaller numbers. As the survey area is divided into grids, we chose to measure density: $\frac{\#~animals}{grid~area~(km^2)}$ (Figure \@ref(fig:densityPlot)). Unavoidably, all statistical models assume a specific data structure to generate numeric results. Because today's observed animal populations result from yesterday's, certain requirements for a standard linear model cannot be assumed. Instead, a non-linear [generalised least squares (GLS)](https://www.sciencedirect.com/topics/mathematics/generalized-least-squares) approach incorporated the ways that animal populations vary over time. First, Figure \@ref(fig:meanVarGLSPlot) demonstrates this model's exponential (upwards curved) nature---this fit better with measuring $\sqrt{density}$ rather than just $density$ from the linear model. Then, drawing on the previous two time periods seemed the best approach for this specific data compared to the basic model (Figure \@ref(fig:residARPlot)).
+##### Model Formulation 
+A Bayesian state space model (SSM) consists of two components: an unobserved "true" population process $N_t$ and the flawed human observation process $y_t$. Here, true wildebeest population $N_t$ depends only on the population growth rate $\lambda_t$ and accounts for estimates of poaching $c_t$. To account for random variation common in natural systems, large $N_{t+1}$s take a normal distribution consistent with the thousands of wildebeest observed. $$N_{t+1} \sim N(\lambda_t(N_t - c_t), \sigma^2_t)$$
 
+$\lambda_t$, the wildebeest population growth rate $\frac{N_{t+1}}{N_t}$, may depend on rainfall $R_t$ that impacts food available to the large African herbivores. To test this relation, $\beta_0$ and $\beta_1$ estimate $log({\lambda_t})$, which is transformed with a logarithm to (1) require positive $\lambda$ values, (2) allow estimation of the per-capita growth rate $r_t = log_e(\lambda_t) = \frac{\Delta{N}}{N\Delta{t}}$, and (3) more easily interpret the relationship with $\beta$s. $$log(\lambda_t) = \beta_0 + \beta_1R_t$$
 
-#### Model Implementation
+Finally, the observation wiildebeest $y_t$ are treated as unbiased with known spread ${se}_t$. Measured by skilled surveyors and with a clear sampling strategy, $y_t$ is expressed as a simple stochastic normal distribution dependent centred on the true population $N_t$ with a known spread. $$y_t \sim N(N_t,se_t^2)$$
+
+Maybe add some more info about why normality? Cite some papers on why it's not Poisson (https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13941), negative binomial (https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/1365-2664.12921), or truncated/half/lognormal (https://onlinelibrary.wiley.com/doi/full/10.1111/aje.12398)
+
+#### Model Implementation  
+The SSM uses well-studied data with $t =$ [`r range(wildebeest$year)`]; measures include rainfall $R_t$ and poaching $c_t$ for all years as well as population estimates $y_t$ and associated error $se_t$ for `r length(validObs)` years.
+
 Explain MCMC. Initial values. Mention JAGS in R. Data source, processing, cleaning. 
 
 
 ### Results and Discussion
 
-Without looking at the model output, a clear decrease in animal density occurs over the survey period (Figure \@ref(fig:densityYrPlot)). The GLS model confirms these results at a high precision (Table \@ref(tab:regOutput))---the probability of no impact from construction is ~0% given the data---with 0.009 fewer animals per $km^2$ after construction. With `r round(sum(EIA$area), 0)` $km^2$ in the survey area, a total drop of 213 animals can be linked to wind turbine construction. The remaining three variables were all highly significant (less than 3% probability of seeing our data if there was no relationship with $\sqrt{density}$), but their effects on animal density were smaller than windfarm construction. Having attempted several linear and GLS models, Table \@ref(tab:regOutput)'s model ultimately shows the lowest error and best-suited information criteria.
+Without looking at the model output, a clear decrease in animal density occurs over the survey period (Figure \@ref(fig:densityYrPlot)). The GLS model confirms these results at a high precision (Table \@ref(tab:regOutput))---the probability of no impact from construction is ~0% given the data---with 0.009 fewer animals per $km^2$ after construction. With  in the survey area, a total drop of 213 animals can be linked to wind turbine construction. The remaining three variables were all highly significant (less than 3% probability of seeing our data if there was no relationship with ), but their effects on animal density were smaller than windfarm construction. Having attempted several linear and GLS models, Table \@ref(tab:regOutput)'s model ultimately shows the lowest error and best-suited information criteria.
 
 \newpage
 ### Appendix
 
-```{r densityPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Animal density averaged across all surveyed time periods plotted across the survey area by x and y position."}
-densityDat <- EIA3 %>% group_by(GridCode, x.pos, y.pos) %>% summarise(mean = mean(density))
+```{r tracePlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Latent parameter trace plots; derived hierarchical parameters not shown but also converged"}
+wildeout1 <- jags(data = wildedata,
+                  inits = wildeinits,
+                  parameters.to.save = wildeparms,
+                  model.file = "wildessmBasic1.txt",
+                  n.chains = nc,
+                  n.iter = ni,
+                  n.burnin = nb,
+                  n.thin = nt)
 
-densityPlot <- ggplot(densityDat) + 
-  geom_tile(aes(x = x.pos, y = y.pos, fill = mean, height = 1000, width = 1000)) + 
-  scale_fill_viridis_c() +
-  theme_bw() + 
-  coord_equal() + 
-  xlab("x position") + 
-  ylab("y position") + 
-  ggtitle("Average Animal Density across Survey Area") + 
-  labs(fill = "Mean animal density")
-
-densityPlot
+MCMCtrace(wildeout1,                 #the fitted model
+          params = wildeparms[1:3], #out parameters of interest
+          iter = ni,                 #plot all iterations
+          pdf = FALSE,               #DON'T write to a PDF
+          ind = TRUE)                #chain specific densities
 ```
 
-```{r meanVarGLSPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap = "Both basic and adjusted GLS models show a curved relationship between $\\sqrt{animal~density}$ and model error variance. Predicted values were grouped into 20 bins to clearly illustrate the relationship with variance (how incorrect the model is for a predicted value). Low values of $\\sqrt{density}$ fit well but the original model struggles as variance increases; the adjusted model consistently fits better. The curved trend is only from the original model."}
-
-cut.fit2 <- cut(fitted(fit.gls.exp), 
-               breaks = quantile(fitted(fit.gls.exp), 
-                                 probs = seq(0, 1, length = 20)))
-meansGLS <- tapply(fitted(fit.gls.exp), cut.fit2, mean)
-varsGLS <- tapply(residuals(fit.gls.exp), cut.fit2, var)
-fittedGLS <- (summary(fit.gls.exp)$sigma^2)*exp(2*coef(fit.gls.exp$model)*meansGLS) 
-dfGLS <- data.frame(meansGLS,varsGLS,fittedGLS)
-colnames(dfGLS)=c("Means","Vars","Fitted")
-dfGLS <- dfGLS %>% mutate(Model = "Original")
-
-
-cut.fit <- cut(fitted(glsExpFTested), 
-               breaks = quantile(fitted(glsExpFTested), 
-                                 probs = seq(0, 1, length = 20)))
-means1 <- tapply(fitted(glsExpFTested), cut.fit, mean)
-vars1 <- tapply(residuals(glsExpFTested), cut.fit, var)
-fitted1 <- (summary(glsExpFTested)$sigma^2)*exp(2*coef(glsExpFTested$model)*means1) 
-df1 <- data.frame(means1,vars1,fitted1) 
-colnames(df1)=c("Means","Vars","Fitted")
-df1 <- df1 %>% mutate(Model = "Adjusted")
-
-meanVarDat <- rbind(df1, dfGLS)
-
-meanVarGLS <- ggplot(meanVarDat, aes(x=Means, y=Vars, colour = Model, shape = Model)) + 
-  geom_point() +
-  theme_bw() +
-  geom_line(data = meanVarDat %>% filter(Model == "Original"), aes(Means,Fitted),color="#31688e") + 
-  scale_colour_manual(values = c(Original = "#440154", Adjusted = "#21918c")) +
-  xlab(TeX("Binned means of predicted $\\sqrt{density}$")) + 
-  ylab("Model error variance") + 
-  ggtitle(TeX("Mean-Variance Plot for GLS Model of $\\sqrt{Animal~Density}$"))
-
-meanVarGLS
+```{r parameterVals, echo = FALSE, message = FALSE, warning = FALSE, fig.cap = "Convergence for main parameters as evidenced by Brooks-Gelman-Rubin Statistic (BGR) values ≈ 1 and sufficiently large effective sample size (EFF)"}
+knitr::kable(MCMCsummary(wildeout1,params = wildeparms[1:3]))
 ```
 
-```{r residARPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="As measured by an ACF (autoregressive correlation function), model errors show improvement after accounting for the preceding two time periods (a.k.a. lags #1 and #2) compared to the original model. Model error (auto)correlation at lag #0 is always 1. Dashed lines suggest the limits for reasonable autocorrelation."}
-origResids <- acf(residuals(fit.gls.exp, type = 'response'), plot = FALSE)
-origACF <- data.frame(Autocorrelation = origResids$acf, Lag = origResids$lag) %>% mutate(Type = "Original")
-adjResids <- acf(residuals(glsExpFTested, type = 'normalized'), plot = FALSE)
-adjACF <- data.frame(Autocorrelation = adjResids$acf, Lag = adjResids$lag) %>% mutate(Type = "Adjusted")
-arDat <- rbind(origACF, adjACF) %>% 
-  arrange(Type) %>%    # First sort by type This sort the dataframe but NOT the factor levels
-  mutate(Type = factor(Type, levels=c("Original","Adjusted")))
+```{r projectedValues, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Projected values for true and estimated wildebeest population sizes"}
+#project values forward 5 years from 1990-1994
+nproj <- 5
 
+#assume that illegal harvesting continues at current levels
+#use average observed rainfall for future projections
+#impute last year values for Nhat and sehat; they aren't referenced though
+wildedata_proj1 <- list(y = c(wildebeest$Nhat, rep(wildebeest$Nhat[nrow(wildebeest)], nproj)), 
+                        nyrs = nrow(wildebeest) + nproj, 
+                        validYrs = validObs,
+                        R = c(wildebeest$rain, rep(mean(wildebeest$rain), nproj)),
+                        obs.tau = c(wildebeest$sehat^-2, rep(wildebeest$sehat[nrow(wildebeest)]^-2, nproj)),
+                        c = c(wildebeest$Catch, rep(wildebeest$Catch[nrow(wildebeest)], nproj)))
 
-arPlot <- ggplot(arDat, aes(x = Lag, y = Autocorrelation, fill = Type)) + 
-  geom_area() + 
-  scale_fill_viridis_d() + 
-  theme_bw() +
-  geom_hline(yintercept=2/sqrt(origResids$n.used), linetype = "dashed") +
-  geom_hline(yintercept=-2/sqrt(origResids$n.used), linetype = "dashed") +
-  scale_y_continuous(limits = c(NA, 1)) +
-  xlab("Time periods (lag #__) prior to current time (lag #0)") + 
-  ylab("Correlation between lag #0 and and lag #__") + 
-  ggtitle("Original versus Adjusted Model Autocorrelation")
+wildeproj1 <- jags(data = wildedata_proj1,
+                   inits = wildeinits,
+                   parameters.to.save = wildeparms,
+                   model.file = "wildessmBasic1.txt",
+                   n.chains = nc,
+                   n.iter = ni,
+                   n.burnin = nb,
+                   n.thin = nt)
 
-arPlot
+wilde_proj1 <- data.frame(Year = c(wildebeest$year, 1990:1994),
+                          Mean = wildeproj1$mean$N.est,
+                          Lower = wildeproj1$q2.5$N.est,
+                          Upper = wildeproj1$q97.5$N.est,
+                          Obs = c(wildebeest$Nhat,rep(NA,nproj)),
+                          LowerObs = c(wildebeest$lci,rep(NA,nproj)),
+                          UpperObs = c(wildebeest$uci,rep(NA,nproj)))
+
+ggplot(data = wilde_proj1) + 
+  geom_ribbon(aes(x=Year, y=Mean, ymin=Lower, ymax=Upper),
+              fill="cyan", alpha = 0.25) +
+  geom_line(aes(x=Year, y=Mean), linewidth=1, color="blue") + 
+  geom_point(aes(x=Year, y=Obs), size=1.2) +
+  geom_line(data = na.omit(wilde_proj1), aes(x=Year, y=Obs)) +
+  geom_errorbar(aes(x=Year, 
+                    y=Obs,
+                    ymin=LowerObs,
+                    ymax=UpperObs), width=0, color="grey") +
+  theme_bw()
 ```
 
-```{r densityYrPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Animal density averaged across all surveyed time periods within a year plotted across the survey area by x and y position. Density clearly decreases after construction (2011-2012) compared to before (2009-2010)."}
-densityYrGridDat <- EIA3 %>% group_by(Year, GridCode, x.pos, y.pos) %>% summarise(mean = mean(density)) %>%
-  mutate(yr = 2000 + Year)
+```{r lambdaPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Caption"}
 
-densityYr <- ggplot(densityYrGridDat) + 
-  geom_tile(aes(x = x.pos, y = y.pos, fill = mean, height = 1000, width = 1000)) + 
-  scale_fill_viridis_c() +
-  theme_bw() + 
-  coord_equal() + 
-  facet_wrap(~yr) + 
-  xlab("x position") + 
-  ylab("y position") + 
-  ggtitle("Average Animal Density across Survey Area per Year") + 
-  labs(fill = "Mean animal density")
-
-densityYr
 ```
 
-```{r densityYrBin, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Animal density averaged across all surveyed areas across time: measured in hours, days, months, and years. Density is highly volitile when measured but also unobserved from March 2010 to 2011. Unfortunately, observations are assymetric across time despite the GLS model assuming equal distance between each time point."}
-densityYrDat <- EIA3 %>% group_by(datetime) %>% summarise(meanDensity = mean(density))
+```{r throwawaySegment, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Caption"}
 
-densityYrLine <- ggplot(densityYrDat, aes(x = datetime, y = meanDensity)) + 
-  geom_line() + 
-  theme_bw() +
-  scale_fill_viridis_c() +
-  scale_x_datetime(breaks="3 months", minor_breaks = "1 month", 
-                   limits = c(as.POSIXct("01/03/2009", format = c("%d/%m/%Y")), 
-                              as.POSIXct("01/03/2012", format = c("%d/%m/%Y"))), 
-                   labels = label_date("%m/%y")) +
-  xlab("Time of observation (Month/Year)") + 
-  ylab("Mean animal density") + 
-  ggtitle("Average Observed Hourly Density across the Entire Survey Area")
-
-densityYrLine
 ```
 
 ### Code Supplement
 
-```{r codeSupplement, include  = TRUE, echo = FALSE}
+```{r codeSupplement, eval = FALSE, include  = TRUE, echo = FALSE}
 library(statsecol)
 library(jagsUI)
 library(tidyverse)
