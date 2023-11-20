@@ -11,9 +11,9 @@ data("wildebeest")
 #Specify model in BUGS language
 sink("wildessm.txt")
 cat("
-#data{
-#  logy <- log(y)
-#}
+data{
+  logy <- log(y)
+}
 model{
 
   # Priors and constraints
@@ -38,7 +38,7 @@ model{
 
   # Likelihood - Observation process
   for (t in validYrs) {
-    y[t] ~ dnorm(log(N.est[t]), tau.obs)
+    logy[t] ~ dnorm(log(N.est[t]), tau.obs)
   }
   
   # Derive population sizes on real scale
@@ -50,10 +50,10 @@ model{
 sink()
 
 # Bundle data
-wildedata <- list(y = log(wildebeest$Nhat), 
-                  nyrs = nrow(wildebeest), 
+wildedata <- list(y = wildebeestImpute$Nhat, 
+                  nyrs = nrow(wildebeestImpute), 
                   validYrs = validObs,
-                  R = wildebeest$rain)
+                  R = wildebeestImpute$rain)
 
 # Initial values
 wildeinits <- function(){
@@ -101,6 +101,49 @@ wilde_traj <- data.frame(Year = wildebeest$year,
 
 
 ggplot(data = wilde_traj) + 
+  geom_ribbon(aes(x=Year, y=Mean, ymin=Lower, ymax=Upper),
+              fill="cyan", alpha = 0.25) +
+  geom_line(aes(x=Year, y=Mean), linewidth=1, color="blue") + 
+  geom_point(aes(x=Year, y=Obs), size=1.2) +
+  geom_line(data = na.omit(wilde_traj), aes(x=Year, y=Obs)) +
+  geom_errorbar(aes(x=Year, 
+                    y=Obs,
+                    ymin=LowerObs,
+                    ymax=UpperObs), width=0, color="grey") +
+  theme_bw()
+
+
+
+
+#project values forward 5 years from 1990-1994
+nproj <- 5
+
+#assume that illegal harvesting continues at current levels
+#use average observed rainfall for future projections
+#impute last year values for Nhat and sehat; they aren't referenced though
+wildedata_proj <- list(y = c(wildebeestImpute$Nhat, rep(wildebeestImpute$Nhat[nrow(wildebeestImpute)], nproj)), 
+                      nyrs = nrow(wildebeestImpute) + nproj, 
+                      validYrs = validObs,
+                      R = c(wildebeestImpute$rain, rep(mean(wildebeestImpute$rain), nproj)))
+
+wildeproj <- jags(data = wildedata_proj,
+                 inits = wildeinits,
+                 parameters.to.save = wildeparms,
+                 model.file = "wildessm.txt",
+                 n.chains = nc,
+                 n.iter = ni,
+                 n.burnin = nb,
+                 n.thin = nt)
+
+wilde_proj <- data.frame(Year = c(wildebeest$year, 1990:1994),
+                         Mean = wildeproj$mean$N.est,
+                         Lower = wildeproj$q2.5$N.est,
+                         Upper = wildeproj$q97.5$N.est,
+                         Obs = c(wildebeest$Nhat,rep(NA,nproj)),
+                         LowerObs = c(wildebeest$lci,rep(NA,nproj)),
+                         UpperObs = c(wildebeest$uci,rep(NA,nproj)))
+
+ggplot(data = wilde_proj) + 
   geom_ribbon(aes(x=Year, y=Mean, ymin=Lower, ymax=Upper),
               fill="cyan", alpha = 0.25) +
   geom_line(aes(x=Year, y=Mean), linewidth=1, color="blue") + 
