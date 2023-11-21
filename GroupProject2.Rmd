@@ -1,10 +1,11 @@
 ---
-title: "****"
+title: "**Against all odds the future of wildebeest shines bright: Bayesian SSM suggests**"
 author: "Misha Tseitlin || Muntasir Akash"
 date: "`r format(Sys.Date(), format='%d %B %Y')`"
 geometry: margin = 2cm
 fontsize: 11pt
-urlcolor: blue
+link-citations: true
+linkcolor: blue
 output: 
   bookdown::pdf_document2:
     toc: false
@@ -16,23 +17,24 @@ header-includes:
   - \usepackage{paralist}
   - \usepackage{fancyhdr}
   - \usepackage{dcolumn}
-# bibliography: export.bib
+bibliography: bibexport.bib
 ---
 
 ```{r setupJAGS, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+# necessary dependencies
 
-library(statsecol)
+library(tidyverse) # data wrangling
 
-library(jagsUI)
+library(zoo) # back-filling
 
-library(tidyverse)
+library(jagsUI) # writing BUGS language in R
 
-library(zoo)
+library(MCMCvis) # MCMC visualization and evaluation 
 
-library(MCMCvis)
+library(statsecol) # load data 
 
-library(knitr)
+library(ggplot2) # graphing and plotting
 
 data("wildebeest")
 
@@ -47,7 +49,6 @@ wildebeestImpute <- na.locf(wildebeest, na.rm = FALSE)
 #fill in 1960 with 1961 values too, since there's no better approximation
 #manually done to avoid wiping rain, catch, and year values
 wildebeestImpute[1,2:6] <- wildebeestImpute[2,2:6]
-
 
 
 # N0 ~ uniform(0, U)
@@ -177,39 +178,72 @@ MT5767: Modelling Wildlife Population Dynamics \\
 \tableofcontents
 
 \newpage
-\pagenumbering{arabic}
+\pagenumbering{roman}
 
 \newpage
-\pagenumbering{roman}
+\pagenumbering{arabic}
 
 ### Introduction
 
-The wildebeest (*Connochaetes*) lives and moves in large herds (@estes2014). The blue wildebeest (*Connochaetes taurinus*) migrate in a clockwise manner from Serengeti, Tanzania to Masai Mara, Kenya, forming the backbone of the Great Migration in south-eastern Africa (@estes2014). During this annual crossing of great distances, the blue wildebeest follow the annual rain cycles and move along the trajectory. The species is also yearly breeder that depends on the rainfall (@estes2014).
+The wildebeest (*Connochaetes*) lives and moves in large herds [@estes2014]. The blue wildebeest (*Connochaetes taurinus*) migrate in a clockwise manner from Serengeti, Tanzania to Masai Mara, Kenya, forming the backbone of the Great Migration in south-eastern Africa [@estes2014]. During this annual crossing of great distances, the blue wildebeest follow the annual rain cycles and move along the trajectory. The species is also yearly breeder that depends on the rainfall [@estes2014].
 
-Due to expansion of agricultural practices, Rinderpest induced by the spread of cattle-farming, poaching pressure, population of this antelope species faced a steep decline in the 60s and 70s. Since then, population monitoring has been a key focus of biologists and conservationists. 
+Due to expansion of agricultural practices, Rinderpest induced by the spread of cattle-farming, and poaching pressure, population of this antelope species faced a steep decline in the 60s and 70s. Since then, population monitoring has been a key focus of biologists and conservationists. 
 
-This report used 1960--1989 measures of wildebeest populations (@css2023) and undertook a Bayesian approach of state-space model to understand and project on population size and growth in the species. 
+This report used 1960--1989 measures of wildebeest populations [sourced from @css2023] and undertook a Bayesian approach of state-space model to understand on population size and growth in the species including the years where no survey was carried out and project on its population into five years in future. 
 
 ### Methodology
 
-##### Model Formulation 
-A Bayesian state space model (SSM) consists of two components: an unobserved "true" population process $N_t$ and the flawed human observation process $y_t$. Here, true wildebeest population $N_t$ depends only on the population growth rate $\lambda_t$ and accounts for estimates of poaching $c_t$. To account for random variation common in natural systems, large $N_{t+1}$s take a normal distribution consistent with the thousands of wildebeest observed. $$N_{t+1} \sim N(\lambda_t(N_t - c_t), \sigma^2_t)$$
+##### State-space model 
 
-$\lambda_t$, the wildebeest population growth rate $\frac{N_{t+1}}{N_t}$, may depend on rainfall $R_t$ that impacts food available to the large African herbivores. To test this relation, $\beta_0$ and $\beta_1$ estimate $log({\lambda_t})$, which is transformed with a logarithm to (1) require positive $\lambda$ values, (2) allow estimation of the per-capita growth rate $r_t = log_e(\lambda_t) = \frac{\Delta{N}}{N\Delta{t}}$, and (3) more easily interpret the relationship with $\beta$s. $$log(\lambda_t) = \beta_0 + \beta_1R_t$$
+A state-space model (SSM) consists of two components: an unobserved "true" population process, $N_t$, and the observation process, $y_t$, that is often entailed with observation process errors and uncertainties. Here, true wildebeest population $N_t$ depends on the population growth rate, $\lambda_t$, that has been accounted for yearly poaching rate, $c_t$. To account for random variation common in natural systems, large $N_{t+1}$s take a normal distribution consistent with the thousands of wildebeest observed. $$N_{t+1} \sim N(\lambda_t*(N_t - c_t), sigma^2_t)$$
 
-Finally, the observation wiildebeest $y_t$ are treated as unbiased with known spread ${se}_t$. Measured by skilled surveyors and with a clear sampling strategy, $y_t$ is expressed as a simple stochastic normal distribution dependent centred on the true population $N_t$ with a known spread. $$y_t \sim N(N_t,se_t^2)$$
+$\lambda_t$, i.e., $\frac{N_{t+1}}{N_t}$, depends on rainfall $R_t$ as suggested by @estes2014. To test this relation, $\beta_0$ and $\beta_1$ estimate $log({\lambda_t})$, a logarithmic transformation assisting in to (i) require positive $\lambda$ values, (ii) allow estimation of the per-capita growth rate $r_t = log_e(\lambda_t) = \frac{\Delta{N}}{N\Delta{t}}$, and (iii) more easily interpret the relationship with $\beta$s. $$log(\lambda_t) \sim \beta_0 + \beta_1*R_t$$
 
-Maybe add some more info about why normality? Cite some papers on why it's not Poisson (https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13941), negative binomial (https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/1365-2664.12921), or truncated/half/lognormal (https://onlinelibrary.wiley.com/doi/full/10.1111/aje.12398)
+Finally, $y_t$  is treated as unbiased accounted with associated known spread of measures ${se}_t$; thus, expressed as a simple stochastic normal distribution linked to underlying true state $N_t$. This relationship can be expressed as $$y_t \sim N(N_t, se_t^2)$$
 
-#### Model Implementation  
-The SSM uses well-studied data with $t =$ [`r range(wildebeest$year)`]; measures include rainfall $R_t$ and poaching $c_t$ for all years as well as population estimates $y_t$ and associated error $se_t$ for `r length(validObs)` years.
+#### Bayesian analysis of SSM
+
+The Bayesian SSM was carried out in RStudio Environment [@Rbase] using *jagsUI* package [@kellner2021]. Bayesian analysis is an approach of parameter estimation where available knowledge about parameters in a statistical model, termed as prior distribution $p(\theta)$, is updated with observed data,a conditional probability, in a form of a likelihood function, $p(y|\theta)$ to determine a posterior distribution, $p(\theta|y)$, of parameters [@van2021]. In contrast to the frequentist approach where parameter estimates are described as point estimates, Bayesian analysis focuses on describing parameters as posterior distribution [@kery2011]. The Bayes' rule is $$p(\theta|y) = \frac{p(y|\theta)*p(\theta)}{p(y)}$$
+$p(y)$, a normalizing factor and non-dependent of any parameter, $\theta$, is thus can be dropped [@van2021]. So, posterior distribution of parameters becomes proportional to a joint probability distribution, i.e., the product of  prior distribution of parameters and observed data in likelihood function, $$p(\theta|y) \sim p(y|\theta)* p(\theta)$$
+Under this backdrop, for wildebeest data analysis, the state process, $N_{t+1}$, was considered as the prior and the observation process, $y_t$, as likelihood. For $N_{t+1}$, we dealt with the following distributions:
+
+
+
+
+
+measures include rainfall $R_t$ and poaching $c_t$ for all years as well as population estimates $y_t$ and associated error $se_t$ for `r length(validObs)` years.
 
 Explain MCMC. Initial values. Mention JAGS in R. Data source, processing, cleaning. 
+
+```{r}
+citation("jagsUI")
+# necessary dependencies
+
+library(tidyverse) # data wrangling
+
+library(zoo) # back-filling
+
+library(jagsUI) # writing BUGS language in R
+
+library(MCMCvis) # MCMC visualization and evaluation 
+
+library(statsecol) # load data 
+
+library(ggplot2)
+
+
+
+```
+
 
 
 ### Results and Discussion
 
 Without looking at the model output, a clear decrease in animal density occurs over the survey period (Figure \@ref(fig:densityYrPlot)). The GLS model confirms these results at a high precision (Table \@ref(tab:regOutput))---the probability of no impact from construction is ~0% given the data---with 0.009 fewer animals per $km^2$ after construction. With  in the survey area, a total drop of 213 animals can be linked to wind turbine construction. The remaining three variables were all highly significant (less than 3% probability of seeing our data if there was no relationship with ), but their effects on animal density were smaller than windfarm construction. Having attempted several linear and GLS models, Table \@ref(tab:regOutput)'s model ultimately shows the lowest error and best-suited information criteria.
+
+\newpage
+### Authors' contribution
+
 
 \newpage
 ### Appendix
@@ -281,35 +315,23 @@ citation("statsecol")
 
 ### Code Supplement
 
-```{r codeSupplement, eval = FALSE, include  = TRUE, echo = FALSE}
-library(statsecol)
-library(jagsUI)
-library(tidyverse)
-library(zoo)
-library(MCMCvis)
-data("wildebeest")
+```{r codeSupplement, eval = FALSE, include  = TRUE, echo = TRUE}
+# N0 ~ uniform(0, U)
 
-#get row numbers for all non-na values
-#manually expressed as c(2, 4, 6, 8, 12, 13, 18, 19, 23, 25, 27, 30)
-validObs <- which(!is.na(wildebeest$Nhat), arr.ind=TRUE)
-numYears <- nrow(wildebeest)
+# Nt | Nt-1 ~ normal [lambda*(Nt-1 - ct-1), sigmaN]
 
-# Error in node N[19]: Invalid parent values
-# imputing data solves partially
-wildebeestImpute <- na.locf(wildebeest, na.rm = FALSE)
-#fill in 1960 with 1961 values too, since there's no better approximation
-#manually done to avoid wiping rain, catch, and year values
-wildebeestImpute[1,2:6] <- wildebeestImpute[2,2:6]
+# yt | Nt ~ normal (Nt, sigmaY)
 
-#Specify model in BUGS language
-sink("wildessmBasic1.txt")
+
+# writing the model in BUGS
+
+# model specification
+
 cat("
 model{
-
-  # Priors and constraints
-  #this prior is quite irrelevant to the final data spread: tested between 0.5 and 3
-  #0.7 is the most suitable option theoretorically
-  n1 ~ dunif(0,0.7)
+  # priors 
+  # this prior is quite irrelevant to the final data spread: tested between 0.5 and 3
+  n1 ~ dunif(0,0.7)   # 0.7 is the most suitable option theoretorically
   N.est[1] <- n1
   beta0 ~ dnorm(0,0.001) 
   beta1 ~ dnorm(0,0.001)
@@ -317,50 +339,65 @@ model{
   sig2.r <- pow(sig.r, 2)
   tau.r <- pow(sig.r, -2)
 
-  # Likelihood - State process
+  # likelihood - state process
   for(t in 1:(nyrs-1)){
     log.lambda[t] <- beta0 + beta1*R[t]
     log(lambda[t]) <- log.lambda[t]
-    N.est[t+1] ~ dnorm(lambda[t]*(N.est[t] - c[t]),tau.r)
+    N.est[t+1] ~ dnorm(lambda[t]*(N.est[t] - c[t]), tau.r)
   }
 
-  # Likelihood - Observation process
+  # likelihood - observation process
   for (t in validYrs) {
     y[t] ~ dnorm(N.est[t], obs.tau[t])
   }
   
 }
-",fill = TRUE)
-sink()
+",fill = TRUE, file='wildessmBasic1.txt')
 
-# Bundle data
-# Works with both imputed and raw data
+# JAGS package data
+
 wildedata <- list(y = wildebeest$Nhat, 
+                  
                   nyrs = nrow(wildebeest), 
+                  
                   validYrs = validObs,
+                  
                   R = wildebeest$rain,
+                  
                   obs.tau = wildebeest$sehat^-2,
+                  
                   c = wildebeest$Catch)
 
-# Initial values
+# set initial values for the unknown parameters
+
 wildeinits <- function(){
+  
   list(beta0 = rnorm(1),
+       
        beta1 = rnorm(1),
+       
        sig.r = runif(1),
-       N = wildebeestImpute$Nhat)#,
+       
+       N = wildebeestImpute$Nhat)
+  
        #N.est = wildebeestImpute$Nhat*1000)
 }
 
-# Parameters monitored
+# parameters monitoring '
+
 wildeparms <- c("beta0", "beta1", "sig.r", "lambda", "N.est")
 
 # MCMC settings
-ni <- 200000
-nt <- 6
-nb <- 100000
-nc <- 3
 
-#throws a warning letting us know that the initial 3 N values were unused
+nt <- 6 # thinning rate to reduce autocorrelation
+
+nc <- 3 # number of chains
+
+ni <- 100000 # number of iteration
+
+nb <- 10000 # number of burn-ins / warm-ups
+
+
 wildeout1 <- jags(data = wildedata,
                   inits = wildeinits,
                   parameters.to.save = wildeparms,
@@ -370,14 +407,6 @@ wildeout1 <- jags(data = wildedata,
                   n.burnin = nb,
                   n.thin = nt)
 
-MCMCtrace(wildeout1,                 #the fitted model
-          params = wildeparms[1:3], #out parameters of interest
-          iter = ni,                 #plot all iterations
-          pdf = FALSE,               #DON'T write to a PDF
-          ind = TRUE)                #chain specific densities
-
-MCMCsummary(wildeout1,
-            params = wildeparms[1:3]) #out parameters of interest
 
 wilde_traj1 <- data.frame(Year = wildebeest$year,
                           Mean = wildeout1$mean$N.est,
@@ -442,3 +471,5 @@ ggplot(data = wilde_proj1) +
                     ymax=UpperObs), width=0, color="grey") +
   theme_bw()
 ```
+
+### References
