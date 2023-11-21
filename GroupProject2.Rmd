@@ -203,39 +203,24 @@ Finally, $y_t$  is treated as unbiased accounted with associated known spread of
 
 #### Bayesian analysis of SSM
 
-The Bayesian SSM was carried out in RStudio Environment [@Rbase] using *jagsUI* package [@kellner2021]. Bayesian analysis is an approach of parameter estimation where available knowledge about parameters in a statistical model, termed as prior distribution $p(\theta)$, is updated with observed data,a conditional probability, in a form of a likelihood function, $p(y|\theta)$ to determine a posterior distribution, $p(\theta|y)$, of parameters [@van2021]. In contrast to the frequentist approach where parameter estimates are described as point estimates, Bayesian analysis focuses on describing parameters as posterior distribution [@kery2011]. The Bayes' rule is $$p(\theta|y) = \frac{p(y|\theta)*p(\theta)}{p(y)}$$
+The Bayesian SSM was carried out in RStudio Environment [@Rbase] using a JAGS user interface package [@kellner2021]. Bayesian analysis is an approach of parameter estimation where available knowledge about parameters in a statistical model, termed as prior distribution $p(\theta)$, is updated with observed data,a conditional probability, in a form of a likelihood function, $p(y|\theta)$ to determine a posterior distribution, $p(\theta|y)$, of parameters [@van2021]. In contrast to the frequentist approach where parameter estimates are described as point estimates, Bayesian analysis focuses on describing parameters as posterior distribution [@kery2011]. The Bayes' rule is $$p(\theta|y) = \frac{p(y|\theta)*p(\theta)}{p(y)}$$
 $p(y)$, a normalizing factor and non-dependent of any parameter, $\theta$, is thus can be dropped [@van2021]. So, posterior distribution of parameters becomes proportional to a joint probability distribution, i.e., the product of  prior distribution of parameters and observed data in likelihood function, $$p(\theta|y) \sim p(y|\theta)* p(\theta)$$
 Under this backdrop, for wildebeest data analysis, the state process, $N_{t+1}$, was considered as the prior and the observation process, $y_t$, as likelihood. For $N_{t+1}$, we dealt with the following distributions:
+    $$log(\lambda_t) = \beta_0 + \beta_1*R_t$$
+    $$N_{t+1} \sim N(\lambda_t*(N_t - c_t), sigma^2_t)$$
+$log(\lambda_t)$ was a deterministic node in @kellner2021 depending on $\beta_0$, and $\beta_1$; whereas $N_{t+1}$ a stochastic node. This settings left us with the following prior distributions, 
+$$\beta_0 \sim dnorm (0, 1000)$$
+$$\beta_1 \sim dnorm (0, 1000)$$
+$$sigma^2_t \sim dunif(0, 1)$$
+For the likelihood, we dealt with the following distribution, $$y_t \sim N(N_t, se_t^2)$$
+For all variance terms (i.e., in $\beta_0$ and $\beta_1$, and $sigma^2_t$, and $se_t^2$), precision, $\tau$ [= $\frac{1}{\sigma^2}$] was used in the analytic settings.
 
+#### Model run and evaluation
 
+All six steps of a Bayesian analysis i.e., writing models in JAGS sampler, packaging JAGS data, setting initial values, defining parameters of interest, putting Markov Chain Monte Carlo (MCMC) values, and posterior predictive checking were sequentially carried out. Our priors of interests were $\beta_0$ and $\beta_1$, and $sigma^2_t$, and our latent variables were growth rate and estimated population size (in million). Markov chain is a iterative process where a value in $t+1$ step is only related to the value of $t$ step. Monte Carlo is a stochastic simulation procedure to determine integrals by simulating random numbers from a given distribution. In MCMC settings, we ran three different chains. To deal with the inherent autocorrelation issues, we dropped the every sixth value in the MCMC run. Our total iteration was 100000 of which 10000 was burn-ins. We checked the posterior predictions using traceplots to detect convergence visually supported with Gelman-Rubin $\hat{R}$ statistic. We did not do prior predictive check as observations were assumed as unbiased and provided with known observation error.
 
-
-
-measures include rainfall $R_t$ and poaching $c_t$ for all years as well as population estimates $y_t$ and associated error $se_t$ for `r length(validObs)` years.
-
-Explain MCMC. Initial values. Mention JAGS in R. Data source, processing, cleaning. 
-
-```{r}
-citation("jagsUI")
-# necessary dependencies
-
-library(tidyverse) # data wrangling
-
-library(zoo) # back-filling
-
-library(jagsUI) # writing BUGS language in R
-
-library(MCMCvis) # MCMC visualization and evaluation 
-
-library(statsecol) # load data 
-
-library(ggplot2)
-
-
-
-```
-
-
+#### R packages
+To deal with NA values (i.e., years without survey), we used @achim2005 for back-filling. However, we used years with observation only in the likelihood settings to predict growth rate and population size for these NA values. @casey2018 was followed for MCMC checks. @ggplot was used for graphs. 
 
 ### Results and Discussion
 
@@ -243,6 +228,7 @@ Without looking at the model output, a clear decrease in animal density occurs o
 
 \newpage
 ### Authors' contribution
+To master understanding Bayesian analysis and writing in JAGS environment, MT and MA wrote and completed running their own separate models. MT coded four models, and MA coded one model. Authors agreed upon one and built their report around it. For report writing, the sections were distributed equally (MA = introduction and methodology; MT = result and discussion). In these steps, collaborative discussion was done at each step. So much so, to select the writing media for the report (i.e., Rmarkdown or Word doc), an unbiased coin was mediated. Both authors reviewed the materials and agreed to the submitted version. For more detail on individual contributions, please reference the \href{https://github.com/MishaTs/MT5767Project2/}{GitHub}.
 
 
 \newpage
