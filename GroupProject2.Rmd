@@ -219,30 +219,37 @@ $p(y)$, does not dependent on any parameter, $\theta$, and is treated as an omit
 For all estimated parameters, Bayesian methods require specifying prior beliefs about the variables of interest (commonly as statistical distributions). $log(\lambda_t)$ deterministically [@kellner2021] depended on $\beta_0$ and $\beta_1$, feeding into an $N_{t+1}$ including variation $sigma_t$. $\beta$ priors centred on 0 (suggesting no relationship) with a large, normal spread in values to minimally influence estimates. Thus, non-zero estimates of growth rates clearly derive from computation.
 $$\beta_0, \beta1 \sim N(0, 1000)$$
 $\sigma$ priors appear small, but represent the millions scale (the same as observations $y_t$); they must be positive due to statistical principles. Thus, the true population may vary uniformly anywhere between 0 and 1 million wildebeest. $$\sigma_t \sim U(0, 1)$$
-Finally, initial population size $N_1$ also used a prior consistent with the observations uniformly between 0 and 0.7 (e.g., 700000 wildebeest)---larger than any observed abundance before 1970. $$N_1 \sim U(0, 0.7)$$
+Finally, initial population size $N_1$ also used a prior consistent with the observations uniformly between 0 and 0.7 (e.g., 700 000 wildebeest)---larger than any observed abundance before 1970. $$N_1 \sim U(0, 0.7)$$
 All variance terms (i.e., $\sigma^2_t$, and $se_t^2$) were input as precision, $\tau = \frac{1}{\sigma^2}$], to JAGS code; nonetheless, empirical results are consistent with these formulations.
 
 #### Model estimation
 
-Bayesian analysis consisted of six steps: writing models in JAGS, packaging data, setting initial values, defining parameters of interest, simulating Markov Chain Monte Carlo (MCMC) values, and posterior predictive checking were sequentially carried out. Our priors of interest were $\beta_0$, $\beta_1$, and $sigma^2_t$, and our latent variables were growth rate and estimated population size (in million). Markov chain is a iterative process where a value in $t+1$ step is only related to the value of $t$ step. Monte Carlo is a stochastic simulation procedure to determine integrals by simulating random numbers from a given distribution. In MCMC settings, we ran three different chains. To deal with the value autocorrelation, we dropped the every sixth value in the MCMC run. MCMC used 200000 total iterations, half of which was discarded to "burn-in" the model. Posterior predictions checking used trace plots to detect convergence visually supported with Bruce-Gelman-Rubin (BGR) $\hat{R}$ statistics. Given assumed unbiased observations with known observation error, posterior predictive checking was deemed unnecessary.
+Bayesian analysis consisted of six steps: writing models in JAGS, packaging data, setting initial values, defining parameters of interest, simulating Markov Chain Monte Carlo (MCMC) values, and posterior predictive checking were sequentially carried out. Our priors of interest were $\beta_0$, $\beta_1$, and $sigma^2_t$, and our latent variables were growth rate and estimated population size (in million). Markov chain is a iterative process where a value in $t+1$ step is only related to the value of $t$ step. Monte Carlo is a stochastic simulation procedure to determine integrals by simulating random numbers from a given distribution. In MCMC settings, we ran three different chains. To deal with the value autocorrelation, we dropped the every sixth value in the MCMC run. MCMC used 200 000 total iterations, half of which were discarded to "burn-in" the model. Posterior predictions checking used trace plots to detect convergence visually supported with Bruce-Gelman-Rubin (BGR) $\hat{R}$ statistics. Given assumed unbiased observations with known observation error, posterior predictive checking was deemed unnecessary.
 
 To deal with NA values (i.e., years without survey), we used @achim2005 to back-fill initial $N_t$ values derived from $y_t$ and initialise the model. However, only years with observations were used in likelihood settings to baseline against $y_t$ in the observation process. @casey2018 was followed for MCMC checks, and @ggplot was used for graphs.
 
 ### Results and Discussion
 
-First, model convergence from the BGR statistics of the main three parameters illustrate high confidence in the results (Table \@ref(tab:parameterVals)). Mean $\sigma_t$, estimated around `r round(mean(wildeout1$mean$sig.r),2)`, seemingly-small but suggesting a typical spread of `r round(mean(wildeout1$mean$sig.r),2)*10^6` wildebeest---equivalent to the largest amount of removals $c_t$ from poaching observed in a year; the 95% credible interval (CI) excludes 0 and a 95% chance of some nonzero variation in the true population. Thus, data supports the inclusion of a stochastic term in the true population $N_t$. In contrast, mean $\beta_0$ suggests `r round(exp(mean(wildeout1$mean$beta0)),2)` population growth rate in years with no rain that decreases by `r abs(round(mean(wildeout1$mean$beta1),2))`% with each additional mm of rainfall $R_t$. 
+First, model convergence from the BGR statistics of the main three parameters illustrate high confidence in the results (Table \@ref(tab:parameterVals)). Mean $\sigma_t$, estimated around `r round(mean(wildeout1$mean$sig.r),2)`, seemingly-small but translating to a typical spread of 40 000 wildebeest---equivalent to the largest amount of removals $c_t$ from poaching observed in a year. As the 95% credible interval (CI) excludes 0, the model concludes a 95% chance of some nonzero variation in the true population, and data supports the inclusion of a stochastic term in the true population $N_t$. In contrast, mean $\beta_0$ suggests 9.6% population growth in years with no rain that decreases by mean $\beta_1$ 0.02% with each additional mm of rainfall $R_t$. However, the 95% CIs include zero and caution against overconfidence of these values: rainfall may actually not relate to population growth rates. The current formulation opts for density-independent growth lacking a formula for population growth and terms like carrying capacity $K$: such an alternative approach may correlate more strongly and intuitively with rainfall in future work.
 
-Without looking at the model output, a clear decrease in animal density occurs over the survey period (Figure \@ref(fig:densityYrPlot)). The GLS model confirms these results at a high precision (Table \@ref(tab:regOutput))
+Trace plots visually confirm convergence and graphically represent the distributions of the three latent parameters (Figure \@ref(fig:tracePlot)). $\beta$s appear broadly normal following from the specified priors, and both centre quite close to zero: chains explore possible values well including extreme options after 130 000 iterations. Notably, chain starting values are tightly constrained  and the model is quite sensitive to prior specification---the Jenkins priors and other uninformative options may be good to test the suitability of other formulations, but the wide variance of our normal priors suggests posterior estimate suitability given their narrowness. Additionally, priors around zero closely match analogous classical inference strategies using null hypotheses of no relationship and require more evidence before concluding a relationship between growth rate $\lambda$ and rainfall. $\sigma_t$ more consistently traverses possible values given its limitation to positive values and provides an apparently lognormal posterior distribution with a narrow left tail excluding zero; the uninformative uniform prior suggests strong confidence in these results. In all cases, the selected 100 000 burn-in seems excessive with relatively quick chain convergence, but the presence of large jumps imply the converse: parameter variance may actually increase with longer chains. Thus, the selected formation is a reasonable middle ground between these two considerations, but those with higher computing power may consider re-running the model with longer iterations (e.g., 500 000 or more) to settle the debate.
 
+Though not displayed, the biological model was particularly sensitive to priors on "true", initial population size $N_1$ and depended on sensible starting values to initialise $N_t$. Thus, such a biological SMM is highly dependent on an explicit specification of biological realism and provided estimation. Field surveyors would benefit from continuing tracking wildebeest populations and communicating such sampling spproaches to statisticians for valid interpretation and model design. Also not visualised, autocorrelation (AC) remains a consistent issue with these data: parameters strongly correlate across 40 iterations (e.g., the length of the survey period). Though a true representation of the built-in determinism within model specification, such AC threatens convergence and faith in estimated values; the simulation approach used thinning (i.e., only selecting every 6th value) as a stopgap but failed to resolve the issue entirely. Future potential solutions include more aggressive thinning (e.g., every 41 values) or other hierarchical approaches (e.g., reformulating the model to make $N$ wholly depend on multiple time-correlated parameters that absorb its serial dependencies); these require more computing power and data, respectively.
+
+Looking now to simulated true population values (1960-1989) and future projections (1990-1994), the SSM coheres well with observed data under the constraints of a exponential population growth (Figure \@ref(fig:projectedValues)). Though the true range of $N_t$ does not perfectly match either estimated $y_t$ or its estimated spread $se_t$, mean $N_t$ always falls within the 95% confidence interval of the observed data; as much is expected given the imperfect nature of biological surveys. Though the coherence of the two results from model construction, generated $N_t$ confirm SSM outputs values correctly as specified. $y_t$ and $N_t$ match well before 1972 but the former more freely approximates the latter in the final decade of surveying. Projections assume illegal poaching remains at 1989 values and 1.49 mm dry season rainfall; under these conditions, wildebeest populations are projection to consistently exceed 1.3 million and approach 2 million individuals by 1994. Given missing observations, the 95% CI is quite wide and suggests a potential 2.5 million wildebeest in 1994.
+
+Derived from the difference between the population sizes $N_t$, population growth rates $\lambda_t$ display consistent population growth of varying degrees (Figure \@ref(fig:lambdaPlot)). Understandably, the 95% CI shows higher uncertainty during unsurveyed years compared to those when data exists. The CIs occasionally crosses the lower threshold of 1---implying no change in populations $N_t$ and $N_{t+1}$---but never do so close to the mean estimated $\lambda_t$s. Given a lack of relationships with the $\beta$s, the uninteresting bivariate plots are omitted; rather, the $\lambda$s present a look fairly consistent population growth rates varying between 1.05 and 1.10 across time. Estimations are constant for projected years given no reference surveys: wildebeest populations may grow by 7.1% [3.2%, 9.7%] starting in 1990. In short, the high $\lambda$s suggest little threat of population extinction over the survey period or during short-run projections and confirm that wildebeest will remain a stable of the future Serengeti.
+
+Ultimately, wildlife managers and ecologists can use this SSM to plan for continued growth of wildebeest across the Serengeti; the SSM imperfectly confirms other empirical results like a rainfall relationship and suggests that exponential growth may be a sub-optimal assumption. Comparing against actual data from the 1990s can more concretely diagnose model limitations; nonetheless, SSMs approximate observed populations well and can serve as another option in the ecologist toolkit for informing future decisions on population dynamics.
 
 \newpage
-### Authors' Contribution
+### Authors' Contributions
 To master understanding Bayesian analysis and writing in JAGS environment, MT and MA wrote and completed running their own separate models. MT coded four models, and MA coded one model. Authors agreed upon one and built their report around it. For report writing, the sections were distributed equally (MA = introduction and methodology; MT = result and discussion) in the first draft compilation. Following these steps and beyond, collaborative discussion and editing was done at each step. So much so, to select the writing media for the report (i.e., Rmarkdown or Word doc), an unbiased coin was mediated. Both authors reviewed the materials and agreed to the submitted version. For more detail on individual contributions, please reference \href{https://github.com/MishaTs/MT5767Project2/}{GitHub}.
 
 \newpage
 ### Appendix
 
-```{r tracePlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Latent parameter trace plots; derived hierarchical parameters not shown but also converged"}
+```{r tracePlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Latent parameter trace plots for $\\beta_0$, $\\beta_1$, and $\\sigma_t$; derived hierarchical parameters are not shown, but all converged"}
 MCMCtrace(wildeout1,                 #the fitted model
           params = wildeparms[1:3], #out parameters of interest
           iter = ni,                 #plot all iterations
@@ -256,7 +263,6 @@ knitr::kable(MCMCsummary(wildeout1,params = wildeparms[1:3]), align="c",
              col.names = c("Parameter",
                            "Mean" ,
                            "Standard Deviation",
-                           "Standard Error",
                            "2.5%",
                            "Median",
                            "97.5%",
@@ -300,7 +306,7 @@ wildeproj1 <- jags(data = wildedata_proj1,
                    n.thin = nt)
 ```
 
-```{r projectedValues, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Projected values for true (black) and estimated (blue) wildebeest population sizes for survey years and projected until 1994"}
+```{r projectedValues, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Projected values for true (black) and estimated (blue) wildebeest population sizes for surveyed and projected years along with true (cyan) and estimated (grey) errors"}
 wilde_proj1 <- data.frame(Year = c(wildebeest$year, 1990:1994),
                           Mean = wildeproj1$mean$N.est,
                           Lower = wildeproj1$q2.5$N.est,
@@ -323,17 +329,18 @@ ggplot(data = wilde_proj1) +
   theme_bw()
 ```
 
-```{r lambdaPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Estimated wildebeest population growth rates with 95% credible interval"}
-Nhat <- wildeout1$sims.list$N.est
-sig.lambda <- wildeout1$sims.list$lambda
+```{r lambdaPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Estimated wildebeest population growth rates with 95% credible interval compared against the no-change line of $\\lambda = 1$"}
+Nhat <- wildeproj1$sims.list$N.est
+sig.lambda <- wildeproj1$sims.list$lambda
 
-lambda_df <- data.frame(Year = wildebeest$year[1:nrow(wildebeest)-1],
-                        Mean = wildeout1$mean$lambda,
-                        Lower = wildeout1$q2.5$lambda,
-                        Upper = wildeout1$q97.5$lambda)
+lambda_df <- data.frame(Year = c(wildebeest$year, 1990:1993),
+                        Mean = wildeproj1$mean$lambda,
+                        Lower = wildeproj1$q2.5$lambda,
+                        Upper = wildeproj1$q97.5$lambda)
 
 ggplot(data=lambda_df) +
   geom_line(aes(x=Year, y=1), color="red", linewidth=1) +
+  geom_vline(xintercept=1989, color="orange", linetype = 2, linewidth=1) + 
   geom_ribbon(aes(x=Year, y=Mean, ymin=Lower, ymax = Upper), 
               fill="black", alpha=0.1) + 
   geom_line(aes(x=Year, y=Mean)) + 
