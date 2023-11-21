@@ -379,8 +379,6 @@ wildeinits <- function(){
        sig.r = runif(1),
        
        N = wildebeestImpute$Nhat)
-  
-       #N.est = wildebeestImpute$Nhat*1000)
 }
 
 # parameters monitoring '
