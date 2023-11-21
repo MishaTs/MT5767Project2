@@ -195,11 +195,11 @@ This report used 1960--1989 measures of wildebeest populations [sourced from @cs
 
 ##### State-space model 
 
-A state-space model (SSM) consists of two components: an unobserved "true" population process, $N_t$, and the observation process, $y_t$, that is often entailed with observation process errors and uncertainties. Here, true wildebeest population $N_t$ depends on the population growth rate, $\lambda_t$, that has been accounted for yearly poaching rate, $c_t$. To account for random variation common in natural systems, large $N_{t+1}$s take a normal distribution consistent with the thousands of wildebeest observed. $$N_{t+1} \sim N(\lambda_t*(N_t - c_t), sigma^2_t)$$
+A state-space model (SSM) consists of two components: an unobserved "true" population process, $N_t$, and the observation process, $y_t$, that is often entailed with observation process errors and uncertainties. Here, true wildebeest population $N_t$ depends on the population growth rate, $\lambda_t$, that has been accounted for yearly poaching rate, $c_t$. To account for random variation common in natural systems, large $N_{t+1}$s take a normal distribution consistent with the thousands of wildebeest observed. $$N_{t+1} \sim N(\lambda_t*(N_t - c_t), \sigma^2_t)$$
 
-$\lambda_t$, i.e., $\frac{N_{t+1}}{N_t}$, depends on rainfall $R_t$ as suggested by @estes2014. To test this relation, $\beta_0$ and $\beta_1$ estimate $log({\lambda_t})$, a logarithmic transformation assisting in to (i) require positive $\lambda$ values, (ii) allow estimation of the per-capita growth rate $r_t = log_e(\lambda_t) = \frac{\Delta{N}}{N\Delta{t}}$, and (iii) more easily interpret the relationship with $\beta$s. $$log(\lambda_t) \sim \beta_0 + \beta_1*R_t$$
+$\lambda_t$, i.e., $\frac{N_{t+1}}{N_t}$, depends on rainfall $R_t$ as suggested by @estes2014. To test this relation, $\beta_0$ and $\beta_1$ estimate $log({\lambda_t})$, a logarithmic transformation assisting in to (i) require positive $\lambda$ values, (ii) allow estimation of the per-capita growth rate $r_t = log_e(\lambda_t) = \frac{\Delta{N}}{N\Delta{t}}$, and (iii) more easily interpret the relationship with $\beta$s. $$log(\lambda_t) = \beta_0 + \beta_1*R_t$$
 
-Finally, $y_t$  is treated as unbiased accounted with associated known spread of measures ${se}_t$; thus, expressed as a simple stochastic normal distribution linked to underlying true state $N_t$. This relationship can be expressed as $$y_t \sim N(N_t, se_t^2)$$
+Finally, mean observations $y_t$ are treated as unbiased estimates of $N_t$ with associated known spread of measures ${se}_t$ and thus expressed as a simple stochastic normal distribution based on true wildebeest abundance. $$y_t \sim N(N_t, se_t^2)$$
 
 #### Bayesian analysis of SSM
 
