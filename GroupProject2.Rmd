@@ -228,7 +228,7 @@ Without looking at the model output, a clear decrease in animal density occurs o
 
 \newpage
 ### Authors' contribution
-To master understanding Bayesian analysis and writing in JAGS environment, MT and MA wrote and completed running their own separate models. MT coded four models, and MA coded one model. Authors agreed upon one and built their report around it. For report writing, the sections were distributed equally (MA = introduction and methodology; MT = result and discussion). In these steps, collaborative discussion was done at each step. So much so, to select the writing media for the report (i.e., Rmarkdown or Word doc), an unbiased coin was mediated. Both authors reviewed the materials and agreed to the submitted version. For more detail on individual contributions, please reference the \href{https://github.com/MishaTs/MT5767Project2/}{GitHub}.
+To master understanding Bayesian analysis and writing in JAGS environment, MT and MA wrote and completed running their own separate models. MT coded four models, and MA coded one model. Authors agreed upon one and built their report around it. For report writing, the sections were distributed equally (MA = introduction and methodology; MT = result and discussion) in the first draft compilation. Following these steps and beyond, collaborative discussion and editing was done at each step. So much so, to select the writing media for the report (i.e., Rmarkdown or Word doc), an unbiased coin was mediated. Both authors reviewed the materials and agreed to the submitted version. For more detail on individual contributions, please reference \href{https://github.com/MishaTs/MT5767Project2/}{GitHub}.
 
 
 \newpage
