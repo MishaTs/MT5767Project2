@@ -7,6 +7,7 @@ fontsize: 11pt
 urlcolor: blue
 output: 
   bookdown::pdf_document2:
+    toc: false
     number_sections: false
 papersize: a4
 header-includes:
@@ -15,17 +16,24 @@ header-includes:
   - \usepackage{paralist}
   - \usepackage{fancyhdr}
   - \usepackage{dcolumn}
-bibliography: export.bib
+# bibliography: export.bib
 ---
 
 ```{r setupJAGS, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
 library(statsecol)
+
 library(jagsUI)
+
 library(tidyverse)
+
 library(zoo)
+
 library(MCMCvis)
+
 library(knitr)
+
 data("wildebeest")
 
 #get row numbers for all non-na values
@@ -40,15 +48,24 @@ wildebeestImpute <- na.locf(wildebeest, na.rm = FALSE)
 #manually done to avoid wiping rain, catch, and year values
 wildebeestImpute[1,2:6] <- wildebeestImpute[2,2:6]
 
-#Specify model in BUGS language
+
+
+# N0 ~ uniform(0, U)
+
+# Nt | Nt-1 ~ normal [lambda*(Nt-1 - ct-1), sigmaN]
+
+# yt | Nt ~ normal (Nt, sigmaY)
+
+
+# writing the model in BUGS
+
+# model specification
 
 cat("
 model{
-
-  # Priors and constraints
+  # priors 
   # this prior is quite irrelevant to the final data spread: tested between 0.5 and 3
-  # 0.7 is the most suitable option theoretorically
-  n1 ~ dunif(0,0.7)
+  n1 ~ dunif(0,0.7)   # 0.7 is the most suitable option theoretorically
   N.est[1] <- n1
   beta0 ~ dnorm(0,0.001) 
   beta1 ~ dnorm(0,0.001)
@@ -56,14 +73,14 @@ model{
   sig2.r <- pow(sig.r, 2)
   tau.r <- pow(sig.r, -2)
 
-  # Likelihood - State process
+  # likelihood - state process
   for(t in 1:(nyrs-1)){
     log.lambda[t] <- beta0 + beta1*R[t]
     log(lambda[t]) <- log.lambda[t]
     N.est[t+1] ~ dnorm(lambda[t]*(N.est[t] - c[t]), tau.r)
   }
 
-  # Likelihood - Observation process
+  # likelihood - observation process
   for (t in validYrs) {
     y[t] ~ dnorm(N.est[t], obs.tau[t])
   }
@@ -71,32 +88,49 @@ model{
 }
 ",fill = TRUE, file='wildessmBasic1.txt')
 
-# Bundle data
-# Works with both imputed and raw data
+# JAGS package data
+
 wildedata <- list(y = wildebeest$Nhat, 
+                  
                   nyrs = nrow(wildebeest), 
+                  
                   validYrs = validObs,
+                  
                   R = wildebeest$rain,
+                  
                   obs.tau = wildebeest$sehat^-2,
+                  
                   c = wildebeest$Catch)
 
-# Initial values
+# set initial values for the unknown parameters
+
 wildeinits <- function(){
+  
   list(beta0 = rnorm(1),
+       
        beta1 = rnorm(1),
+       
        sig.r = runif(1),
-       N = wildebeestImpute$Nhat)#,
+       
+       N = wildebeestImpute$Nhat)
+  
        #N.est = wildebeestImpute$Nhat*1000)
 }
 
-# Parameters monitored
+# parameters monitoring '
+
 wildeparms <- c("beta0", "beta1", "sig.r", "lambda", "N.est")
 
 # MCMC settings
-ni <- 200000
-nt <- 6
-nb <- 100000
-nc <- 3
+
+nt <- 6 # thinning rate to reduce autocorrelation
+
+nc <- 3 # number of chains
+
+ni <- 100000 # number of iteration
+
+nb <- 10000 # number of burn-ins / warm-ups
+
 
 wildeout1 <- jags(data = wildedata,
                   inits = wildeinits,
@@ -118,7 +152,7 @@ wildeout1 <- jags(data = wildedata,
 \vspace{0.5cm}
 
 \Large
-{\bf Assignment two: State-Space model for wildebeest population dynamics}
+{\bf Assignment two: State-space model for wildebeest population dynamics}
 
 
 \vspace{0.5cm}
@@ -138,10 +172,23 @@ MT5767: Modelling Wildlife Population Dynamics \\
 \end{centering}
 
 \newpage
+\centering
+\raggedright
+\tableofcontents
+
+\newpage
+\pagenumbering{arabic}
+
+\newpage
+\pagenumbering{roman}
 
 ### Introduction
 
-Travelling throughout the Tanzanian Serengeti, the blue wildebeest (Connochaetes taurinus) is a keystone species that defines the African grasslands motivates study among ecologists, land managers, and governments. In their travels, wildebeest must contend with threats like rinderpest and poaching while also depending on environmental and ecological processes, from rain to birth rates. Looking back to historical trends, this report uses 1960--1989 measures of wildebeest populations for estimating a Bayesian state space model to understand population sizes, growth rates, and relationships to factors like rainfall while accounting for poaching. 
+The wildebeest (*Connochaetes*) lives and moves in large herds (@estes2014). The blue wildebeest (*Connochaetes taurinus*) migrate in a clockwise manner from Serengeti, Tanzania to Masai Mara, Kenya, forming the backbone of the Great Migration in south-eastern Africa (@estes2014). During this annual crossing of great distances, the blue wildebeest follow the annual rain cycles and move along the trajectory. The species is also yearly breeder that depends on the rainfall (@estes2014).
+
+Due to expansion of agricultural practices, Rinderpest induced by the spread of cattle-farming, poaching pressure, population of this antelope species faced a steep decline in the 60s and 70s. Since then, population monitoring has been a key focus of biologists and conservationists. 
+
+This report used 1960--1989 measures of wildebeest populations (@css2023) and undertook a Bayesian approach of state-space model to understand and project on population size and growth in the species. 
 
 ### Methodology
 
@@ -224,6 +271,8 @@ ggplot(data = wilde_proj1) +
                     ymin=LowerObs,
                     ymax=UpperObs), width=0, color="grey") +
   theme_bw()
+
+citation("statsecol")
 ```
 
 ```{r lambdaPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Caption"}
