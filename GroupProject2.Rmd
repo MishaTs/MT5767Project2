@@ -185,11 +185,11 @@ MT5767: Modelling Wildlife Population Dynamics \\
 
 ### Introduction
 
-The wildebeest (*Connochaetes*) lives and moves in large herds [@estes2014]. The blue wildebeest (*Connochaetes taurinus*) migrate in a clockwise manner from Serengeti, Tanzania to Masai Mara, Kenya, forming the backbone of the Great Migration in south-eastern Africa [@estes2014]. During this annual crossing of great distances, the blue wildebeest follow the annual rain cycles and move along the trajectory. The species is also yearly breeder that depends on the rainfall [@estes2014].
+The wildebeest (*Connochaetes*) live and move in large herds [@estes2014]. The blue wildebeest (*Connochaetes taurinus*) migrate in a clockwise manner from Serengeti, Tanzania to Masai Mara, Kenya, forming the backbone of the Great Migration in south-eastern Africa [@estes2014]. During this annual crossing of great distances, the blue wildebeest follow annual rain cycles and move along the trajectory. The species also breeds annually dependent on rainfall [@estes2014].
 
-Due to expansion of agricultural practices, Rinderpest induced by the spread of cattle-farming, and poaching pressure, population of this antelope species faced a steep decline in the 60s and 70s. Since then, population monitoring has been a key focus of biologists and conservationists. 
+Due to expansion of agriculture, Rinderpest induced by the spread of cattle-farming, and poaching pressure, population of this antelope species faced a steep decline in the 1960s and 70s. Since then, population monitoring has been a key focus of biologists and conservationists. 
 
-This report used 1960--1989 measures of wildebeest populations [sourced from @css2023] and undertook a Bayesian approach of state-space model to understand on population size and growth in the species including the years where no survey was carried out and project on its population into five years in future. 
+This report used 1960---1989 measures of wildebeest populations [sourced from @css2023] to construct a Bayesian state-space model, analyse species population size and growth including years lacking survey data, and project on population trajectories five years in future. 
 
 ### Methodology
 
@@ -221,6 +221,7 @@ All six steps of a Bayesian analysis i.e., writing models in JAGS sampler, packa
 
 #### R packages
 To deal with NA values (i.e., years without survey), we used @achim2005 for back-filling. However, we used years with observation only in the likelihood settings to predict growth rate and population size for these NA values. @casey2018 was followed for MCMC checks. @ggplot was used for graphs. 
+
 
 ### Results and Discussion
 
@@ -365,8 +366,6 @@ wildeinits <- function(){
        sig.r = runif(1),
        
        N = wildebeestImpute$Nhat)
-  
-       #N.est = wildebeestImpute$Nhat*1000)
 }
 
 # parameters monitoring '
