@@ -192,7 +192,7 @@ This report used 1960---1989 measures of wildebeest populations [sourced from @c
 
 ### Methodology
 
-##### State-space model 
+##### Ecological modelling
 
 A state-space model (SSM) consists of two components: an unobserved "true" population process, $N_t$, and the observation process, $y_t$, that is often entailed with observation process errors and uncertainties. Here, true wildebeest population $N_t$ depends on the population growth rate, $\lambda_t$, that has been accounted for yearly poaching rate, $c_t$. To account for random variation common in natural systems, large $N_{t+1}$s take a normal distribution consistent with the thousands of wildebeest observed. $$N_{t+1} \sim N(\lambda_t*(N_t - c_t), sigma^2_t)$$
 
@@ -211,9 +211,9 @@ For all estimated parameters, Bayesian methods require specifying prior beliefs 
 $$\beta_0, \beta1 \sim N(0, 1000)$$
 $\sigma$ priors appear small, but represent the millions scale (the same as observations $y_t$); they must be positive due to statistical principles. Thus, the true population may vary uniformly anywhere between 0 and 1 million wildebeest.
 $$\sigma_t \sim U(0, 1)$$
-For all variance terms (i.e., in $\beta_0$ and $\beta_1$, and $sigma^2_t$, and $se_t^2$), precision, $\tau$ [= $\frac{1}{\sigma^2}$] was used in the analytic settings.
+All variance terms (i.e., $\sigma^2_t$, and $se_t^2$) input as precision, $\tau = \frac{1}{\sigma^2}$], to JAGS code; nontheless, empirical results are consistent with the above formulation.
 
-#### Model run and evaluation
+#### Model estimation
 
 All six steps of a Bayesian analysis i.e., writing models in JAGS sampler, packaging JAGS data, setting initial values, defining parameters of interest, putting Markov Chain Monte Carlo (MCMC) values, and posterior predictive checking were sequentially carried out. Our priors of interests were $\beta_0$ and $\beta_1$, and $sigma^2_t$, and our latent variables were growth rate and estimated population size (in million). Markov chain is a iterative process where a value in $t+1$ step is only related to the value of $t$ step. Monte Carlo is a stochastic simulation procedure to determine integrals by simulating random numbers from a given distribution. In MCMC settings, we ran three different chains. To deal with the inherent autocorrelation issues, we dropped the every sixth value in the MCMC run. Our total iteration was 100000 of which 10000 was burn-ins. We checked the posterior predictions using traceplots to detect convergence visually supported with Gelman-Rubin $\hat{R}$ statistic. We did not do prior predictive check as observations were assumed as unbiased and provided with known observation error.
 
