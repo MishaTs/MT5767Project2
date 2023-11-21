@@ -157,3 +157,6 @@ ggplot(data = wilde_proj1) +
                     ymin=LowerObs,
                     ymax=UpperObs), width=0, color="grey") +
   theme_bw()
+
+write_rds(wildeout1, "wildeout1.rds")
+write_rds(wildeproj1, "wildeproj1.rds")

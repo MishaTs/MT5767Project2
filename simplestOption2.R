@@ -92,7 +92,7 @@ MCMCtrace(wildeout2,                 #the fitted model
           ind = TRUE)                #chain specific densities
 
 MCMCsummary(wildeout2,
-            params = wildeparms[1:3]) #out parameters of interest
+            params = wildeparms[1:3]) #our parameters of interest
 
 wilde_traj2 <- data.frame(Year = wildebeest$year,
                           Mean = wildeout2$mean$N.est,
@@ -102,7 +102,7 @@ wilde_traj2 <- data.frame(Year = wildebeest$year,
                           LowerObs = wildebeest$lci,
                           UpperObs = wildebeest$uci)
 
-
+#plot trajectories with the model overlaid
 ggplot(data = wilde_traj2) + 
   geom_ribbon(aes(x=Year, y=Mean, ymin=Lower, ymax=Upper),
               fill="cyan", alpha = 0.25) +
