@@ -1,13 +1,12 @@
 ---
-title: "**A Gnu Approach: Bayesian Analysis of 20th Century Serengeti Wildebeest**"
-author: "Muntasir Akash, Misha Tseitlin"
+title: "****"
+author: "Misha Tseitlin || Muntasir Akash"
 date: "`r format(Sys.Date(), format='%d %B %Y')`"
 geometry: margin = 2cm
 fontsize: 11pt
 urlcolor: blue
 output: 
   bookdown::pdf_document2:
-    toc: false
     number_sections: false
 papersize: a4
 header-includes:
@@ -16,6 +15,7 @@ header-includes:
   - \usepackage{paralist}
   - \usepackage{fancyhdr}
   - \usepackage{dcolumn}
+bibliography: export.bib
 ---
 
 ```{r setupJAGS, include=FALSE}
@@ -46,8 +46,8 @@ cat("
 model{
 
   # Priors and constraints
-  #this prior is quite irrelevant to the final data spread: tested between 0.5 and 3
-  #0.7 is the most suitable option theoretorically
+  # this prior is quite irrelevant to the final data spread: tested between 0.5 and 3
+  # 0.7 is the most suitable option theoretorically
   n1 ~ dunif(0,0.7)
   N.est[1] <- n1
   beta0 ~ dnorm(0,0.001) 
@@ -60,7 +60,7 @@ model{
   for(t in 1:(nyrs-1)){
     log.lambda[t] <- beta0 + beta1*R[t]
     log(lambda[t]) <- log.lambda[t]
-    N.est[t+1] ~ dnorm(lambda[t]*(N.est[t] - c[t]),tau.r)
+    N.est[t+1] ~ dnorm(lambda[t]*(N.est[t] - c[t]), tau.r)
   }
 
   # Likelihood - Observation process
@@ -118,19 +118,13 @@ wildeout1 <- jags(data = wildedata,
 \vspace{0.5cm}
 
 \Large
-{\bf Project 2: State-Space Model for Wildebeest Population Dynamics}
+{\bf Assignment two: State-Space model for wildebeest population dynamics}
 
-\vspace{1.5cm}
-Contribution Statement
-
-\normalsize
-
-This report jointly involved collaborative discussion, coding, and writing by MA and MT. MT coded four models, and MA coded one model; one of MT's models was selected for this report. MA drove report content, model evaluation, and model selection. An unbiased £1 coin mediated all disputes. For more detail on individual contributions, please reference the \href{https://github.com/MishaTs/MT5767Project2/}{GitHub}.
 
 \vspace{0.5cm}
 
 ```{r uni_logo, echo=F, out.width="50%"}
-knitr::include_graphics("01-standard-vertical-black-text.png")
+knitr::include_graphics("SaintsLogo.png")
 ```
 
 \Large
