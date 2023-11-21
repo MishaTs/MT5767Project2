@@ -153,8 +153,7 @@ wildeout1 <- jags(data = wildedata,
 \vspace{0.5cm}
 
 \Large
-{\bf Assignment two: State-space model for wildebeest population dynamics}
-
+{\bf Assignment 2: State-space model for wildebeest population dynamics}
 
 \vspace{0.5cm}
 
@@ -199,19 +198,19 @@ A state-space model (SSM) consists of two components: an unobserved "true" popul
 
 $\lambda_t$, i.e., $\frac{N_{t+1}}{N_t}$, depends on rainfall $R_t$ as suggested by @estes2014. To test this relation, $\beta_0$ and $\beta_1$ estimate $log({\lambda_t})$, a logarithmic transformation assisting in to (i) require positive $\lambda$ values, (ii) allow estimation of the per-capita growth rate $r_t = log_e(\lambda_t) = \frac{\Delta{N}}{N\Delta{t}}$, and (iii) more easily interpret the relationship with $\beta$s. $$log(\lambda_t) = \beta_0 + \beta_1*R_t$$
 
-Finally, $y_t$  is treated as unbiased accounted with associated known spread of measures ${se}_t$; thus, expressed as a simple stochastic normal distribution linked to underlying true state $N_t$. This relationship can be expressed as $$y_t \sim N(N_t, se_t^2)$$
+Finally, $y_t$  is treated as unbiased accounted with associated known spread of measures ${se}_t$; thus, expressed as a simple stochastic normal distribution linked to underlying true state $N_t$. This relationship can be expressed as $$y_t \sim N(N_t, se_t^2)$$ 
 
-#### Bayesian analysis of SSM
+These three equations are the likelihoods estimated by Bayesian methods.
 
-The Bayesian SSM was carried out in RStudio Environment [@Rbase] using a JAGS user interface package [@kellner2021]. Bayesian analysis is an approach of parameter estimation where available knowledge about parameters in a statistical model, termed as prior distribution $p(\theta)$, is updated with observed data,a conditional probability, in a form of a likelihood function, $p(y|\theta)$ to determine a posterior distribution, $p(\theta|y)$, of parameters [@van2021]. In contrast to the frequentist approach where parameter estimates are described as point estimates, Bayesian analysis focuses on describing parameters as posterior distribution [@kery2011]. The Bayes' rule is $$p(\theta|y) = \frac{p(y|\theta)*p(\theta)}{p(y)}$$
-$p(y)$, a normalizing factor and non-dependent of any parameter, $\theta$, is thus can be dropped [@van2021]. So, posterior distribution of parameters becomes proportional to a joint probability distribution, i.e., the product of  prior distribution of parameters and observed data in likelihood function, $$p(\theta|y) \varpropto p(y|\theta)* p(\theta)$$
-Under this backdrop, for wildebeest data analysis, the state process, $N_{t+1}$, was considered as the prior and the observation process, $y_t$, as likelihood. For $N_{t+1}$, we dealt with the following distributions:
-    $$log(\lambda_t) = \beta_0 + \beta_1*R_t$$
-    $$N_{t+1} \sim N(\lambda_t*(N_t - c_t), sigma^2_t)$$
-$log(\lambda_t)$ was a deterministic node in @kellner2021 depending on $\beta_0$, and $\beta_1$; whereas $N_{t+1}$ a stochastic node. This settings left us with the following prior distributions, 
+#### Bayesian analysis
+
+Implemented in RStudio Environment [@Rbase] using a JAGS user interface package [@kellner2021], Bayesian analysis updates pre-existing knowledge about parameters, the prior distribution $p(\theta)$, with estimates derived from observed data, a likelihood function $p(y|\theta)$, These generate parameter estimates as a posterior distribution, $p(\theta|y)$ [@van2021]. In contrast to classical statistics generating estimates as single values, Bayesian analysis descirbe parameters as full distributions [@kery2011]. These all derive from Bayes' rule $p(\theta|y) = \frac{p(y|\theta)*p(\theta)}{p(y)}$.
+$p(y)$, does not dependent on any parameter, $\theta$, and is treated as an omitted normalising factor [@van2021]. Thus, the Bayesian approach simplies to deriving the posterior from existing priors and an estimated likelihood $p(\theta|y) \varpropto p(y|\theta)* p(\theta)$.
+
+For all estimated parameters, Bayesian methods require specifying prior beliefs about the variables of interest (commonly as statistical distributions). $log(\lambda_t)$ deterministically [@kellner2021] depended on $\beta_0$ and $\beta_1$, feeding into an $N_{t+1}$ including variation $sigma_t$. $\beta$ priors centred on 0 (suggesting no relationship) with a large, normal spread in values to minimally influence estimates. Thus, non-zero estimates of growth rates clearly derive from computation.
 $$\beta_0, \beta1 \sim N(0, 1000)$$
-$$\sigma^2_t \sim U(0, 1)$$
-For the likelihood, we dealt with the following distribution, $$y_t \sim N(N_t, se_t^2)$$
+$\sigma$ priors appear small, but represent the millions scale (the same as observations $y_t$); they must be positive due to statistical principles. Thus, the true population may vary uniformly anywhere between 0 and 1 million wildebeest.
+$$\sigma_t \sim U(0, 1)$$
 For all variance terms (i.e., in $\beta_0$ and $\beta_1$, and $sigma^2_t$, and $se_t^2$), precision, $\tau$ [= $\frac{1}{\sigma^2}$] was used in the analytic settings.
 
 #### Model run and evaluation
@@ -227,7 +226,7 @@ To deal with NA values (i.e., years without survey), we used @achim2005 for back
 Without looking at the model output, a clear decrease in animal density occurs over the survey period (Figure \@ref(fig:densityYrPlot)). The GLS model confirms these results at a high precision (Table \@ref(tab:regOutput))---the probability of no impact from construction is ~0% given the data---with 0.009 fewer animals per $km^2$ after construction. With  in the survey area, a total drop of 213 animals can be linked to wind turbine construction. The remaining three variables were all highly significant (less than 3% probability of seeing our data if there was no relationship with ), but their effects on animal density were smaller than windfarm construction. Having attempted several linear and GLS models, Table \@ref(tab:regOutput)'s model ultimately shows the lowest error and best-suited information criteria.
 
 \newpage
-### Authors' contribution
+### Authors' Contribution
 To master understanding Bayesian analysis and writing in JAGS environment, MT and MA wrote and completed running their own separate models. MT coded four models, and MA coded one model. Authors agreed upon one and built their report around it. For report writing, the sections were distributed equally (MA = introduction and methodology; MT = result and discussion) in the first draft compilation. Following these steps and beyond, collaborative discussion and editing was done at each step. So much so, to select the writing media for the report (i.e., Rmarkdown or Word doc), an unbiased coin was mediated. Both authors reviewed the materials and agreed to the submitted version. For more detail on individual contributions, please reference \href{https://github.com/MishaTs/MT5767Project2/}{GitHub}.
 
 
