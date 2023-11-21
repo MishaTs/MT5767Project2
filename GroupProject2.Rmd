@@ -1,5 +1,5 @@
 ---
-title: "__Against all odds, a *Gnu*, bright future for Wildebeest: A Bayesian state space model suggests__"
+title: "__Against all odds, a *Gnu*, bright future for Wildebeest: A Bayesian state-space model suggests__"
 author: "Misha Tseitlin || Muntasir Akash"
 date: "`r format(Sys.Date(), format='%d %B %Y')`"
 geometry: margin = 2cm
@@ -35,9 +35,10 @@ library(MCMCvis) # MCMC visualization and evaluation
 library(statsecol) # load data 
 
 library(ggplot2) # graphing and plotting
-library(knitr)
-library(kableExtra)
-library(latex2exp)
+
+library(kableExtra) # producing table
+
+library(latex2exp) # putting symbols to figures and tables
 
 data("wildebeest")
 
@@ -70,7 +71,6 @@ nb <- 100000 # number of burn-ins / warm-ups
 # Nt | Nt-1 ~ normal [lambda*(Nt-1 - ct-1), sigmaN]
 
 # yt | Nt ~ normal (Nt, sigmaY)
-
 
 # writing the model in BUGS
 
@@ -130,7 +130,7 @@ wildeinits <- function(){
        N = wildebeestImpute$Nhat)
 }
 
-# parameters monitoring '
+# parameters monitoring 
 
 wildeparms <- c("beta0", "beta1", "sig.r", "lambda", "N.est")
 
@@ -195,7 +195,7 @@ MT5767: Modelling Wildlife Population Dynamics \\
 
 ### Introduction
 
-Wildebeest (*Connochaetes*) live and move in large herds [@estes2014]. The blue wildebeest (*Connochaetes taurinus*) migrate in a clockwise manner from Serengeti, Tanzania to Masai Mara, Kenya, forming the backbone of the Great Migration in south-eastern Africa [@estes2014]. During this annual crossing of great distances, the blue wildebeest follow annual rain cycles and move along the trajectory. The species also breeds annually dependent on rainfall [@estes2014]. Due to expansion of agriculture, Rinderpest induced by the spread of cattle-farming, and poaching pressure, this antelope specie's abundance steeply declined in the 1960s and 70s. Since then, population monitoring has been a key focus of biologists and conservationists. 
+The wildebeest (*Connochaetes*) live and move in large herds [@estes2014]. The blue wildebeest (*Connochaetes taurinus*) migrate in a clockwise manner from Serengeti, Tanzania to Masai Mara, Kenya, forming the backbone of the Great Migration in south-eastern Africa [@estes2014]. During this annual crossing of great distances, the blue wildebeest follow annual rain cycles and move along the trajectory. The species also breeds annually, dependent on rainfall [@estes2014]. Due to expansion of agriculture, Rinderpest induced by the spread of cattle-farming, and poaching pressure, this antelope species' abundance steeply declined in the 1960s and 70s. Since then, population monitoring has been a key focus of biologists and conservationists. 
 
 This report used 1960---1989 measures of wildebeest populations [sourced from @css2023] to construct a Bayesian state-space model, analyse species population size and growth including years lacking survey data, and project on population trajectories five years in future. 
 
@@ -203,7 +203,7 @@ This report used 1960---1989 measures of wildebeest populations [sourced from @c
 
 ##### Ecological modelling
 
-A state-space model (SSM) consists of two components: an unobserved "true" population process, $N_t$, and the observation process, $y_t$, that is often entailed with observation process errors and uncertainties. Here, true wildebeest population $N_t$ depends on the population growth rate, $\lambda_t$, that has been accounted for yearly poaching rate, $c_t$. Variables can either be deterministic (i.e., $=$) or stochastic (i.e., $\sim$); deterministic values can be perfectly calculated from the right hand of the equation with no variation while stochastic values include natural, statistical variation often represented by known distributions (e.g., normal, poisson, binomial). To account for random variation common in natural systems, large $N_{t+1}$s take a normal distribution consistent with the thousands of wildebeest observed. $$N_{t+1} \sim N(\lambda_t*(N_t - c_t), sigma^2_t)$$
+A state-space model (SSM) consists of two components: an unobserved "true" population process, $N_t$, and the observation process, $y_t$, that is often entailed with observation process errors and uncertainties. Here, true wildebeest population $N_t$ depends on the population growth rate, $\lambda_t$, that has been accounted for yearly removals from poaching, $c_t$. Variables can either be deterministic (i.e., $=$) or stochastic (i.e., $\sim$); deterministic values can be perfectly calculated from the right hand of the equation with no variation while stochastic values include natural, statistical variation often represented by known distributions (e.g., normal, poisson, binomial). To account for random variation common in natural systems, large $N_{t+1}$s take a normal distribution consistent with the thousands of wildebeest observed. $$N_{t+1} \sim N(\lambda_t*(N_t - c_t), sigma^2_t)$$
 
 $\lambda_t$, i.e., $\frac{N_{t+1}}{N_t}$, depends on rainfall $R_t$ as suggested by @estes2014. To test this relation, $\beta_0$ and $\beta_1$ estimate $log({\lambda_t})$, a logarithmic transformation assisting in to (i) require positive $\lambda$ values, (ii) allow estimation of the per-capita growth rate $r_t = log_e(\lambda_t) = \frac{\Delta{N}}{N\Delta{t}}$, and (iii) more easily interpret the relationship with $\beta$s. $$log(\lambda_t) = \beta_0 + \beta_1*R_t$$
 
@@ -230,17 +230,17 @@ To deal with NA values (i.e., years without survey), we used @achim2005 to back-
 
 ### Results and Discussion
 
-First, model convergence from the BGR statistics of the main three parameters illustrate high confidence in the results (Table \@ref(tab:parameterVals)). Mean $\sigma_t$, estimated around `r round(mean(wildeout1$mean$sig.r),2)`, seemingly-small but translating to a typical spread of 40 000 wildebeest---equivalent to the largest amount of removals $c_t$ from poaching observed in a year. As the 95% credible interval (CI) excludes 0, the model concludes a 95% chance of some nonzero variation in the true population, and data supports the inclusion of a stochastic term in the true population $N_t$. In contrast, mean $\beta_0$ suggests 9.6% population growth in years with no rain that decreases by mean $\beta_1$ 0.02% with each additional mm of rainfall $R_t$. However, the 95% CIs include zero and caution against overconfidence of these values: rainfall may actually not relate to population growth rates. The current formulation opts for density-independent growth lacking a formula for population growth and terms like carrying capacity $K$: such an alternative approach may correlate more strongly and intuitively with rainfall in future work.
+First, model convergence from BGR statistics of three main parameters illustrate high confidence in results (Table \@ref(tab:parameterVals)). Mean $\sigma_t$, estimated around `r round(mean(wildeout1$mean$sig.r),2)`, seems small but pertains to a typical spread of 40 000 wildebeest that can be equivalent to the maximum annual removal. As the 95% credible interval (CI) excludes 0, the model concludes a 95% chance of some non-zero variation in the true population, and data supports the inclusion of a stochastic term in the true population. In contrast, mean $\beta_0$ suggests 9.6% population growth in years with no rain that decreases by mean $\beta_1$ 0.02% with each additional mm of rainfall $R_t$. However, the 95% CIs include zero indicating that rainfall may actually not influence population growth rates. The current model opts for density-independent growth lacking terms like carrying capacity $K$. This alternative approach may capture the true effect of rainfall more strongly.
 
-Trace plots visually confirm convergence and graphically represent the distributions of the three latent parameters (Figure \@ref(fig:tracePlot)). $\beta$s appear broadly normal following from the specified priors, and both centre quite close to zero: chains explore possible values well including extreme options after 130 000 iterations. Notably, chain starting values are tightly constrained  and the model is quite sensitive to prior specification---the Jenkins priors and other uninformative options may be good to test the suitability of other formulations, but the wide variance of our normal priors suggests posterior estimate suitability given their narrowness. Additionally, priors around zero closely match analogous classical inference strategies using null hypotheses of no relationship and require more evidence before concluding a relationship between growth rate $\lambda$ and rainfall. $\sigma_t$ more consistently traverses possible values given its limitation to positive values and provides an apparently lognormal posterior distribution with a narrow left tail excluding zero; the uninformative uniform prior suggests strong confidence in these results. In all cases, the selected 100 000 burn-in seems excessive with relatively quick chain convergence, but the presence of large jumps imply the converse: parameter variance may actually increase with longer chains. Thus, the selected formation is a reasonable middle ground between these two considerations, but those with higher computing power may consider re-running the model with longer iterations (e.g., 500 000 or more) to settle the debate.
+Figure \@ref(fig:tracePlot) visually confirms convergence and graphically represent the distributions of the three parameters. $\beta$s appear broadly normal following from the specified priors, and both centre quite close to zero: chains explore possible values well including extreme options after 130 000 iterations. Notably, chain starting values are tightly constrained, and the model is quite sensitive to prior specification. The Jenkins prior, a type of diffuse prior, and other uninformative options may be good to test the suitability of other formulations for prior predictive checking. Additionally, priors around zero closely match analogous classical inference strategies using null hypotheses. $\sigma_t$ more consistently traverses possible values given its limitation to positive values and provides an apparently log-normal posterior distribution with a narrow left tail excluding zero; the diffuse uniform prior suggests strong confidence in these results. The selected 100 000 burn-in seems excessive with relatively quick chain convergence. But the presence of large jumps imply the converse: parameter variance may actually increase with longer chains. Thus, the selected formation is a reasonable middle ground between these two considerations. 
 
-Though not displayed, the biological model was particularly sensitive to priors on "true", initial population size $N_1$ and depended on sensible starting values to initialise $N_t$. Thus, such a biological SMM is highly dependent on an explicit specification of biological realism and provided estimation. Field surveyors would benefit from continuing tracking wildebeest populations and communicating such sampling spproaches to statisticians for valid interpretation and model design. Also not visualised, autocorrelation (AC) remains a consistent issue with these data: parameters strongly correlate across 40 iterations (e.g., the length of the survey period). Though a true representation of the built-in determinism within model specification, such AC threatens convergence and faith in estimated values; the simulation approach used thinning (i.e., only selecting every 6th value) as a stopgap but failed to resolve the issue entirely. Future potential solutions include more aggressive thinning (e.g., every 41 values) or other hierarchical approaches (e.g., reformulating the model to make $N$ wholly depend on multiple time-correlated parameters that absorb its serial dependencies); these require more computing power and data, respectively.
+The initial population size, $N_1$, strongly depended on sensible starting values to initialise simulations. Thus, an explicit specification of biological realism is imperative. Such simulation outputs would benefit conservation of wildebeest populations. Autocorrelation remains a consistent issue with these data: parameters strongly correlate across iterations. The thinning approach undertaken could not solve the issue. Future potential solutions include more aggressive thinning or other hierarchical approaches (e.g., model reformulation).
 
-Looking now to simulated true population values (1960-1989) and future projections (1990-1994), the SSM coheres well with observed data under the constraints of a exponential population growth (Figure \@ref(fig:projectedValues)). Though the true range of $N_t$ does not perfectly match either estimated $y_t$ or its estimated spread $se_t$, mean $N_t$ always falls within the 95% confidence interval of the observed data; as much is expected given the imperfect nature of biological surveys. Though the coherence of the two results from model construction, generated $N_t$ confirm SSM outputs values correctly as specified. $y_t$ and $N_t$ match well before 1972 but the former more freely approximates the latter in the final decade of surveying. Projections assume illegal poaching remains at 1989 values and 1.49 mm dry season rainfall; under these conditions, wildebeest populations are projection to consistently exceed 1.3 million and approach 2 million individuals by 1994. Given missing observations, the 95% CI is quite wide and suggests a potential 2.5 million wildebeest in 1994.
+Looking into future projections (1990-1994), the SSM matches well with observed data under the constraints of a exponential population growth (Figure \@ref(fig:projectedValues)). The true range of $N_t$ did not perfectly match estimated $y_t$ or its spread $se_t$. Mean estimated $N_t$ fell within the 95% confidence interval of the observed data, as expected given imperfect biological surveys. Though the coherence of the two results from model construction, generated $N_t$ confirm SSM outputs values correctly as specified. $y_t$ and $N_t$ match well before 1972 but the former more freely approximates the latter in the final decade of surveying. Projections assume illegal poaching remains at 1989 values and 1.49 mm dry season rainfall; under these conditions, wildebeest populations are projection to consistently exceed 1.3 million and approach 2 million individuals by 1994. Given missing observations, the 95% CI is quite wide and suggests a potential 2.5 million wildebeest in 1994.
 
-Derived from the difference between the population sizes $N_t$, population growth rates $\lambda_t$ display consistent population growth of varying degrees (Figure \@ref(fig:lambdaPlot)). Understandably, the 95% CI shows higher uncertainty during unsurveyed years compared to those when data exists. The CIs occasionally crosses the lower threshold of 1---implying no change in populations $N_t$ and $N_{t+1}$---but never do so close to the mean estimated $\lambda_t$s. Given a lack of relationships with the $\beta$s, the uninteresting bivariate plots are omitted; rather, the $\lambda$s present a look fairly consistent population growth rates varying between 1.05 and 1.10 across time. Estimations are constant for projected years given no reference surveys: wildebeest populations may grow by 7.1% [3.2%, 9.7%] starting in 1990. In short, the high $\lambda$s suggest little threat of population extinction over the survey period or during short-run projections and confirm that wildebeest will remain a stable of the future Serengeti.
+Population growth rates were consistent with varying degrees (mean estimates 1.05--1.10) (Figure \@ref(fig:lambdaPlot)). Understandably, the 95% CI showed higher uncertainty during unsurveyed years compared to years surveyed. The CIs occasionally and only slightly crossed the threshold of decreased growth (<1). Estimations were constant for projected years given no reference surveys. Wildebeest populations might grow by 7.1% [3.2%, 9.7%] starting in 1990. In short, the high $\lambda$s suggest little threat of population extinction over the survey period or during short-run projections and confirm that wildebeest will remain stable.
 
-Ultimately, wildlife managers and ecologists can use this SSM to plan for continued growth of wildebeest across the Serengeti; the SSM imperfectly confirms other empirical results like a rainfall relationship and suggests that exponential growth may be a sub-optimal assumption. Comparing against actual data from the 1990s can more concretely diagnose model limitations; nonetheless, SSMs approximate observed populations well and can serve as another option in the ecologist toolkit for informing future decisions on population dynamics.
+The SSM imperfectly confirms other empirical results like a rainfall relationship and suggests that exponential growth may be a sub-optimal assumption. Even so, SSMs can approximate observed populations well and can serve a strong tool in conservation ecology.
 
 \newpage
 ### Authors' Contributions
@@ -306,7 +306,7 @@ wildeproj1 <- jags(data = wildedata_proj1,
                    n.thin = nt)
 ```
 
-```{r projectedValues, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Projected values for true (black) and estimated (blue) wildebeest population sizes for surveyed and projected years along with true (cyan) and estimated (grey) errors"}
+```{r projectedValues, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Projected values for wildebeest population. State process denoted by blue line with CIs (cyan). Observation process depicted with black line and grey error bars."}
 wilde_proj1 <- data.frame(Year = c(wildebeest$year, 1990:1994),
                           Mean = wildeproj1$mean$N.est,
                           Lower = wildeproj1$q2.5$N.est,
@@ -325,7 +325,8 @@ ggplot(data = wilde_proj1) +
                     y=Obs,
                     ymin=LowerObs,
                     ymax=UpperObs), width=0, color="grey") +
-  ylab("Population size (millions of wildebeest)") + 
+  ylab("population size (millions)") + 
+  xlab("year")
   theme_bw()
 ```
 
@@ -339,13 +340,14 @@ lambda_df <- data.frame(Year = c(wildebeest$year, 1990:1993),
                         Upper = wildeproj1$q97.5$lambda)
 
 ggplot(data=lambda_df) +
-  geom_line(aes(x=Year, y=1), color="red", linewidth=1) +
-  geom_vline(xintercept=1989, color="orange", linetype = 2, linewidth=1) + 
+  geom_line(aes(x=Year, y=1), color="red", alpha = 0.7, linewidth=1) +
+  geom_vline(xintercept=1989, color="blue", alpha = 0.7, linetype = 2, linewidth=1) + 
   geom_ribbon(aes(x=Year, y=Mean, ymin=Lower, ymax = Upper), 
               fill="black", alpha=0.1) + 
   geom_line(aes(x=Year, y=Mean)) + 
   geom_point(aes(x=Year, y=Mean)) + 
-  ylab("Population growth rate") + theme_bw()
+  ylab("population growth rate") + 
+  xlab("year") + theme_bw()
 ```
 
 \newpage
