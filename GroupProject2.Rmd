@@ -195,38 +195,38 @@ MT5767: Modelling Wildlife Population Dynamics \\
 
 ### Introduction
 
-The wildebeest (*Connochaetes*) live and move in large herds [@estes2014]. The blue wildebeest (*Connochaetes taurinus*) migrate in a clockwise manner from Serengeti, Tanzania to Masai Mara, Kenya, forming the backbone of the Great Migration in south-eastern Africa [@estes2014]. During this annual crossing of great distances, the blue wildebeest follow annual rain cycles and move along the trajectory. The species also breeds annually, dependent on rainfall [@estes2014]. Due to expansion of agriculture, Rinderpest induced by the spread of cattle-farming, and poaching pressure, this antelope species' abundance steeply declined in the 1960s and 70s. Since then, population monitoring has been a key focus of biologists and conservationists. 
+The wildebeest (*Connochaetes*) live and move in large herds [@estes2014]. The blue wildebeest (*Connochaetes taurinus*) migrate in a clockwise manner from Serengeti, Tanzania to Masai Mara, Kenya, forming the backbone of the Great Migration in south-eastern Africa [@estes2014]. During this annual crossing of great distances, the blue wildebeest follow annual rain cycles and move along its trajectory. The species also breeds annually, dependent on rainfall [@estes2014]. Due to expansion of agriculture, Rinderpest induced by the spread of cattle-farming, and poaching pressure, this antelope species's abundance steeply declined in the 1960s and 70s. Since then, population monitoring has been a key focus of biologists and conservationists. 
 
-This report used 1960---1989 measures of wildebeest populations [sourced from @css2023] to construct a Bayesian state-space model, analyse species population size and growth including years lacking survey data, and project on population trajectories five years in future. 
+This report used 1960--1989 measures of wildebeest populations [sourced from @css2023] to construct a Bayesian state-space model, analyse species population size and growth including years lacking survey data, and project population trajectories five years into the future. 
 
 ### Methodology
 
 ##### Ecological modelling
 
-A state-space model (SSM) consists of two components: an unobserved "true" population process, $N_t$, and the observation process, $y_t$, that is often entailed with observation process errors and uncertainties. Here, true wildebeest population $N_t$ depends on the population growth rate, $\lambda_t$, that has been accounted for yearly removals from poaching, $c_t$. Variables can either be deterministic (i.e., $=$) or stochastic (i.e., $\sim$); deterministic values can be perfectly calculated from the right hand of the equation with no variation while stochastic values include natural, statistical variation often represented by known distributions (e.g., normal, poisson, binomial). To account for random variation common in natural systems, large $N_{t+1}$s take a normal distribution consistent with the thousands of wildebeest observed. $$N_{t+1} \sim N(\lambda_t*(N_t - c_t), sigma^2_t)$$
+A state-space model (SSM) consists of two components: an unobserved "true" population process, $N_t$, and the observation process, $y_t$, that often entails observation process errors and uncertainties. Here, true wildebeest population $N_t$ depends on the population growth rate, $\lambda_t$, that has been accounted for yearly removals from poaching, $c_t$. Variables can either be deterministic (i.e., $=$) or stochastic (i.e., $\sim$); deterministic values can be perfectly calculated from the right hand of the equation with no variation while stochastic values include natural, statistical variation often represented by known distributions (e.g., normal, poisson, binomial). To account for random variation common in natural systems, large $N_{t+1}$s take a normal distribution consistent with the millions of wildebeest observed more suitable to a continuous distribution. $$N_{t+1} \sim N(\lambda_t*(N_t - c_t), sigma^2_t)$$
 
-$\lambda_t$, i.e., $\frac{N_{t+1}}{N_t}$, depends on rainfall $R_t$ as suggested by @estes2014. To test this relation, $\beta_0$ and $\beta_1$ estimate $log({\lambda_t})$, a logarithmic transformation assisting in to (i) require positive $\lambda$ values, (ii) allow estimation of the per-capita growth rate $r_t = log_e(\lambda_t) = \frac{\Delta{N}}{N\Delta{t}}$, and (iii) more easily interpret the relationship with $\beta$s. $$log(\lambda_t) = \beta_0 + \beta_1*R_t$$
+$\lambda_t$, i.e., $\frac{N_{t+1}}{N_t}$, depends on rainfall $R_t$ as suggested by @estes2014. To test this relation, $\beta_0$ and $\beta_1$ estimate $log({\lambda_t})$, a logarithmic transformation allowing for (i) only positive $\lambda$ values, (ii) estimation of the per-capita growth rate $r_t = log_e(\lambda_t) = \frac{\Delta{N}}{N\Delta{t}}$, and (iii) more easy interpretation of the relationship with $\beta$s. $$log(\lambda_t) = \beta_0 + \beta_1*R_t$$
 
-Finally, $y_t$  is treated as unbiased accounted with associated known spread of measures ${se}_t$; thus, expressed as a simple stochastic normal distribution linked to underlying true state $N_t$. This relationship can be expressed as $$y_t \sim N(N_t, se_t^2)$$ 
+Finally, population measures $y_t$ are treated as normally distributed and unbiased with an associated known spread of values ${se}_t$. Thus, they correspond to a simple stochastic normal distribution linked to the underlying true state $N_t$. $$y_t \sim N(N_t, se_t^2)$$ 
 
 These three equations are the likelihoods estimated by Bayesian methods.
 
 #### Bayesian analysis
 
-Implemented in RStudio Environment [@Rbase] using a JAGS user interface package [@kellner2021], Bayesian analysis updates pre-existing knowledge about parameters, the prior distribution $p(\theta)$, with estimates derived from observed data, a likelihood function $p(y|\theta)$, These generate parameter estimates as a posterior distribution, $p(\theta|y)$ [@van2021]. In contrast to classical statistics generating estimates as single values, Bayesian analysis descirbe parameters as full distributions [@kery2011]. These all derive from Bayes' rule. $$p(\theta|y) = \frac{p(y|\theta)*p(\theta)}{p(y)}$$
-$p(y)$, does not dependent on any parameter, $\theta$, and is treated as an omitted normalising factor [@van2021]. Thus, the Bayesian approach simplies to deriving the posterior from existing priors and an estimated likelihood $p(\theta|y) \varpropto p(y|\theta)* p(\theta)$.
+Implemented in RStudio Environment [@Rbase] using a JAGS user interface package [@kellner2021], Bayesian analysis updates pre-existing knowledge about parameters, the prior distribution $p(\theta)$, with estimates derived from observed data, a likelihood function $p(y|\theta)$. These generate parameter estimates as a posterior distribution, $p(\theta|y)$ [@van2021]. In contrast to classical statistics generating estimates as single values, Bayesian analyses describe parameters as full distributions [@kery2011]. These all derive from Bayes' rule. $$p(\theta|y) = \frac{p(y|\theta)*p(\theta)}{p(y)}$$
+$p(y)$ does not dependent on any parameter $\theta$ and is treated as an omitted normalising factor [@van2021]. Thus, the Bayesian approach simplies to deriving the posterior from existing priors and an estimated likelihood $p(\theta|y) \varpropto p(y|\theta)* p(\theta)$.
 
-For all estimated parameters, Bayesian methods require specifying prior beliefs about the variables of interest (commonly as statistical distributions). $log(\lambda_t)$ deterministically [@kellner2021] depended on $\beta_0$ and $\beta_1$, feeding into an $N_{t+1}$ including variation $sigma_t$. $\beta$ priors centred on 0 (suggesting no relationship) with a large, normal spread in values to minimally influence estimates. Thus, non-zero estimates of growth rates clearly derive from computation.
+For all estimated parameters, Bayesian methods require specifying prior beliefs about the variables of interest (commonly as statistical distributions). $log(\lambda_t)$ deterministically [@kellner2021] depended on $\beta_0$ and $\beta_1$, feeding into an $N_{t+1}$ including variation $sigma_t$. $\beta$ priors centred on 0 (suggesting no relationship) with a large, normal spread in values to minimally influence estimates. Thus, non-zero estimates of growth rates clearly derive from the data.
 $$\beta_0, \beta_1 \sim N(0, 1000)$$
-$\sigma$ priors appear small, but represent the millions scale (the same as observations $y_t$); they must be positive due to statistical principles. Thus, the true population may vary uniformly anywhere between 0 and 1 million wildebeest. $$\sigma_t \sim U(0, 1)$$
+$\sigma$ priors appear small but represent the millions scale (the same as observations $y_t$); they must be positive due to statistical principles. Thus, the true population may vary uniformly anywhere between 0 and 1 million wildebeest. $$\sigma_t \sim U(0, 1)$$
 Finally, initial population size $N_1$ also used a prior consistent with the observations uniformly between 0 and 0.7 (e.g., 700 000 wildebeest)---larger than any observed abundance before 1970. $$N_1 \sim U(0, 0.7)$$
-All variance terms (i.e., $\sigma^2_t$, and $se_t^2$) were input as precision, $\tau = \frac{1}{\sigma^2}$], to JAGS code; nonetheless, empirical results are consistent with these formulations.
+All variance terms (i.e., $\sigma^2_t$, and $se_t^2$) were input as precision, $\tau = \frac{1}{\sigma^2}$, to JAGS code.
 
 #### Model estimation
 
-Bayesian analysis consisted of six steps: writing models in JAGS, packaging data, setting initial values, defining parameters of interest, simulating Markov Chain Monte Carlo (MCMC) values, and posterior predictive checking were sequentially carried out. Our priors of interest were $\beta_0$, $\beta_1$, and $sigma^2_t$, and our latent variables were growth rate and estimated population size (in million). Markov chain is a iterative process where a value in $t+1$ step is only related to the value of $t$ step. Monte Carlo is a stochastic simulation procedure to determine integrals by simulating random numbers from a given distribution. In MCMC settings, we ran three different chains. To deal with the value autocorrelation, we dropped the every sixth value in the MCMC run. MCMC used 200 000 total iterations, half of which were discarded to "burn-in" the model. Posterior predictions checking used trace plots to detect convergence visually supported with Bruce-Gelman-Rubin (BGR) $\hat{R}$ statistics. Given assumed unbiased observations with known observation error, posterior predictive checking was deemed unnecessary.
+Bayesian analysis consisted of six steps: writing models in JAGS, packaging data, setting initial values, defining parameters of interest, simulating Markov Chain Monte Carlo (MCMC) values, and posterior predictive checking. Our priors of interest were $\beta_0$, $\beta_1$, and $sigma^2_t$, and our latent variables were growth rate and estimated population size (in millions). Markov chains are a iterative process where a value in $t+1$ is only related to the value of its $t$ step. Monte Carlo is a stochastic simulation procedure to determine integrals by simulating random numbers from a given distribution. In MCMC settings, we ran three different chains. To deal with the value autocorrelation, we dropped the every sixth value in the MCMC run. MCMC used 200 000 total iterations, half of which were discarded to "burn-in" the model. Posterior checks used trace plots to visually detect convergence supported with Bruce-Gelman-Rubin (BGR) $\hat{R}$ statistics. Given assumed unbiased observations with known observation error, posterior predictive checking was deemed unnecessary.
 
-To deal with NA values (i.e., years without survey), we used @achim2005 to back-fill initial $N_t$ values derived from $y_t$ and initialise the model. However, only years with observations were used in likelihood settings to baseline against $y_t$ in the observation process. @casey2018 was followed for MCMC checks, and @ggplot was used for graphs.
+To deal with N/A values (i.e., years without survey), @achim2005 back-filled initial $N_t$ values derived from $y_t$ to initialise the model. However, only years with observations were used in likelihood settings to baseline against $y_t$ in the observation process. @casey2018 was followed for MCMC checks and @ggplot for graphs.
 
 ### Results and Discussion
 
@@ -256,23 +256,6 @@ MCMCtrace(wildeout1,                 #the fitted model
           pdf = FALSE,               #DON'T write to a PDF
           ind = TRUE)                #chain specific densities
 ```
-
-```{r parameterVals, echo = FALSE, warning = FALSE}
-knitr::kable(MCMCsummary(wildeout1,params = wildeparms[1:3]), align="c",
-             format = "latex",
-             col.names = c("Parameter",
-                           "Mean" ,
-                           "Standard Deviation",
-                           "2.5%",
-                           "Median",
-                           "97.5%",
-                           "BGR Stat",
-                           "ESS"),
-             caption = "SSM primary parameter summary for $\\beta_0$, $\\beta_1$, and $\\sigma_t$") %>% 
-  kable_classic(full_width = F)
-```
-
-
 
 ```{r computeProj, echo = FALSE, message = FALSE, warning = FALSE, include = FALSE}
 #project values forward 5 years from 1990-1994
@@ -330,6 +313,21 @@ ggplot(data = wilde_proj1) +
   theme_bw()
 ```
 
+```{r parameterVals, echo = FALSE, warning = FALSE}
+knitr::kable(MCMCsummary(wildeout1,params = wildeparms[1:3]), align="c",
+             format = "latex",
+             col.names = c("Parameter",
+                           "Mean" ,
+                           "Standard Deviation",
+                           "2.5%",
+                           "Median",
+                           "97.5%",
+                           "BGR Stat",
+                           "ESS"),
+             caption = "SSM primary parameter summary for $\\beta_0$, $\\beta_1$, and $\\sigma_t$") %>% 
+  kable_classic(full_width = F)
+```
+
 ```{r lambdaPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Estimated wildebeest population growth rates with 95% credible interval compared against the no-change line of $\\lambda = 1$"}
 Nhat <- wildeproj1$sims.list$N.est
 sig.lambda <- wildeproj1$sims.list$lambda
@@ -360,7 +358,6 @@ ggplot(data=lambda_df) +
 # Nt | Nt-1 ~ normal [lambda*(Nt-1 - ct-1), sigmaN]
 
 # yt | Nt ~ normal (Nt, sigmaY)
-
 
 # writing the model in BUGS
 
@@ -434,7 +431,7 @@ ni <- 200000 # number of iteration
 
 nb <- 100000 # number of burn-ins / warm-ups
 
-
+#conduct the MCMC analysis
 wildeout1 <- jags(data = wildedata,
                   inits = wildeinits,
                   parameters.to.save = wildeparms,
@@ -444,7 +441,7 @@ wildeout1 <- jags(data = wildedata,
                   n.burnin = nb,
                   n.thin = nt)
 
-
+#pull out relevant data from JAGS output
 wilde_traj1 <- data.frame(Year = wildebeest$year,
                           Mean = wildeout1$mean$N.est,
                           Lower = wildeout1$q2.5$N.est,
@@ -453,7 +450,7 @@ wilde_traj1 <- data.frame(Year = wildebeest$year,
                           LowerObs = wildebeest$lci,
                           UpperObs = wildebeest$uci)
 
-
+#plot estimated population trajectories against observed data
 ggplot(data = wilde_traj1) + 
   geom_ribbon(aes(x=Year, y=Mean, ymin=Lower, ymax=Upper),
               fill="cyan", alpha = 0.25) +
@@ -483,6 +480,7 @@ wildedata_proj1 <- list(y = c(wildebeest$Nhat,
                         c = c(wildebeest$Catch, 
                               rep(wildebeest$Catch[nrow(wildebeest)], nproj)))
 
+#re-conduct MCMC into future years with specified data
 wildeproj1 <- jags(data = wildedata_proj1,
                    inits = wildeinits,
                    parameters.to.save = wildeparms,
@@ -492,6 +490,7 @@ wildeproj1 <- jags(data = wildedata_proj1,
                    n.burnin = nb,
                    n.thin = nt)
 
+#compile the new projected JAGS output
 wilde_proj1 <- data.frame(Year = c(wildebeest$year, 1990:1994),
                           Mean = wildeproj1$mean$N.est,
                           Lower = wildeproj1$q2.5$N.est,
@@ -500,6 +499,7 @@ wilde_proj1 <- data.frame(Year = c(wildebeest$year, 1990:1994),
                           LowerObs = c(wildebeest$lci,rep(NA,nproj)),
                           UpperObs = c(wildebeest$uci,rep(NA,nproj)))
 
+#plot population trajectories as earlier extended into the future
 ggplot(data = wilde_proj1) + 
   geom_ribbon(aes(x=Year, y=Mean, ymin=Lower, ymax=Upper),
               fill="cyan", alpha = 0.25) +
