@@ -187,7 +187,7 @@ MT5767: Modelling Wildlife Population Dynamics \\
 
 The wildebeest (*Connochaetes*) live and move in large herds [@estes2014]. The blue wildebeest (*Connochaetes taurinus*) migrate in a clockwise manner from Serengeti, Tanzania to Masai Mara, Kenya, forming the backbone of the Great Migration in south-eastern Africa [@estes2014]. During this annual crossing of great distances, the blue wildebeest follow annual rain cycles and move along the trajectory. The species also breeds annually dependent on rainfall [@estes2014].
 
-Due to expansion of agriculture, Rinderpest induced by the spread of cattle-farming, and poaching pressure, population of this antelope species faced a steep decline in the 1960s and 70s. Since then, population monitoring has been a key focus of biologists and conservationists. 
+Due to expansion of agriculture, Rinderpest induced by the spread of cattle-farming, and poaching pressure, this antelope specie's abundance steeply declined in the 1960s and 70s. Since then, population monitoring has been a key focus of biologists and conservationists. 
 
 This report used 1960---1989 measures of wildebeest populations [sourced from @css2023] to construct a Bayesian state-space model, analyse species population size and growth including years lacking survey data, and project on population trajectories five years in future. 
 
@@ -197,21 +197,20 @@ This report used 1960---1989 measures of wildebeest populations [sourced from @c
 
 A state-space model (SSM) consists of two components: an unobserved "true" population process, $N_t$, and the observation process, $y_t$, that is often entailed with observation process errors and uncertainties. Here, true wildebeest population $N_t$ depends on the population growth rate, $\lambda_t$, that has been accounted for yearly poaching rate, $c_t$. To account for random variation common in natural systems, large $N_{t+1}$s take a normal distribution consistent with the thousands of wildebeest observed. $$N_{t+1} \sim N(\lambda_t*(N_t - c_t), sigma^2_t)$$
 
-$\lambda_t$, i.e., $\frac{N_{t+1}}{N_t}$, depends on rainfall $R_t$ as suggested by @estes2014. To test this relation, $\beta_0$ and $\beta_1$ estimate $log({\lambda_t})$, a logarithmic transformation assisting in to (i) require positive $\lambda$ values, (ii) allow estimation of the per-capita growth rate $r_t = log_e(\lambda_t) = \frac{\Delta{N}}{N\Delta{t}}$, and (iii) more easily interpret the relationship with $\beta$s. $$log(\lambda_t) \sim \beta_0 + \beta_1*R_t$$
+$\lambda_t$, i.e., $\frac{N_{t+1}}{N_t}$, depends on rainfall $R_t$ as suggested by @estes2014. To test this relation, $\beta_0$ and $\beta_1$ estimate $log({\lambda_t})$, a logarithmic transformation assisting in to (i) require positive $\lambda$ values, (ii) allow estimation of the per-capita growth rate $r_t = log_e(\lambda_t) = \frac{\Delta{N}}{N\Delta{t}}$, and (iii) more easily interpret the relationship with $\beta$s. $$log(\lambda_t) = \beta_0 + \beta_1*R_t$$
 
 Finally, $y_t$  is treated as unbiased accounted with associated known spread of measures ${se}_t$; thus, expressed as a simple stochastic normal distribution linked to underlying true state $N_t$. This relationship can be expressed as $$y_t \sim N(N_t, se_t^2)$$
 
 #### Bayesian analysis of SSM
 
 The Bayesian SSM was carried out in RStudio Environment [@Rbase] using a JAGS user interface package [@kellner2021]. Bayesian analysis is an approach of parameter estimation where available knowledge about parameters in a statistical model, termed as prior distribution $p(\theta)$, is updated with observed data,a conditional probability, in a form of a likelihood function, $p(y|\theta)$ to determine a posterior distribution, $p(\theta|y)$, of parameters [@van2021]. In contrast to the frequentist approach where parameter estimates are described as point estimates, Bayesian analysis focuses on describing parameters as posterior distribution [@kery2011]. The Bayes' rule is $$p(\theta|y) = \frac{p(y|\theta)*p(\theta)}{p(y)}$$
-$p(y)$, a normalizing factor and non-dependent of any parameter, $\theta$, is thus can be dropped [@van2021]. So, posterior distribution of parameters becomes proportional to a joint probability distribution, i.e., the product of  prior distribution of parameters and observed data in likelihood function, $$p(\theta|y) \sim p(y|\theta)* p(\theta)$$
+$p(y)$, a normalizing factor and non-dependent of any parameter, $\theta$, is thus can be dropped [@van2021]. So, posterior distribution of parameters becomes proportional to a joint probability distribution, i.e., the product of  prior distribution of parameters and observed data in likelihood function, $$p(\theta|y) \varpropto p(y|\theta)* p(\theta)$$
 Under this backdrop, for wildebeest data analysis, the state process, $N_{t+1}$, was considered as the prior and the observation process, $y_t$, as likelihood. For $N_{t+1}$, we dealt with the following distributions:
     $$log(\lambda_t) = \beta_0 + \beta_1*R_t$$
     $$N_{t+1} \sim N(\lambda_t*(N_t - c_t), sigma^2_t)$$
 $log(\lambda_t)$ was a deterministic node in @kellner2021 depending on $\beta_0$, and $\beta_1$; whereas $N_{t+1}$ a stochastic node. This settings left us with the following prior distributions, 
-$$\beta_0 \sim dnorm (0, 1000)$$
-$$\beta_1 \sim dnorm (0, 1000)$$
-$$sigma^2_t \sim dunif(0, 1)$$
+$$\beta_0, \beta1 \sim N(0, 1000)$$
+$$\sigma^2_t \sim U(0, 1)$$
 For the likelihood, we dealt with the following distribution, $$y_t \sim N(N_t, se_t^2)$$
 For all variance terms (i.e., in $\beta_0$ and $\beta_1$, and $sigma^2_t$, and $se_t^2$), precision, $\tau$ [= $\frac{1}{\sigma^2}$] was used in the analytic settings.
 
@@ -292,8 +291,6 @@ ggplot(data = wilde_proj1) +
                     ymin=LowerObs,
                     ymax=UpperObs), width=0, color="grey") +
   theme_bw()
-
-citation("statsecol")
 ```
 
 ```{r lambdaPlot, echo = FALSE, message = FALSE, warning = FALSE, fig.cap="Caption"}
@@ -455,6 +452,8 @@ ggplot(data = wilde_proj1) +
                     ymin=LowerObs,
                     ymax=UpperObs), width=0, color="grey") +
   theme_bw()
+
+citation("statsecol")
 ```
 
 ### References
